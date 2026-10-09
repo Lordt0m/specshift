@@ -27,12 +27,17 @@
 ---
 
 ## Phase 1: Freeze demonstrable contract and fixture
-- **Status**: In progress
+- **Status**: PASSED
+- **Gate Evidence**:
+  - Created `api/tests/fixtures/demo/baseline.yaml` and `candidate.yaml` (OpenAPI 3.0.3 fictional order management contract).
+  - Contains no proprietary/customer/personal data.
+  - Exercises operation addition/removal (OP-01, OP-02), request required addition (SC-04), request bound tightening (SC-10), response enum addition under exhaustive-client assumption (SC-03), response guarantee removal (SC-05), multi-operation dependency aggregation (`Order` schema used by `GET /orders` and `GET /orders/{orderId}`), operationId change (MT-02), response status addition (RS-02), and composition coverage gap (`oneOf` construct).
+  - Created `api/tests/fixtures/demo/expected.json` with machine-readable expectations.
 
 ---
 
 ## Phase 2: Build the pure Python comparison engine
-- **Status**: Pending
+- **Status**: In progress
 
 ---
 

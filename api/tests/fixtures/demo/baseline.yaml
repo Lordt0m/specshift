@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: Order Management Service
+  version: 2026-01-01
+  description: Fictional order API baseline contract for change review demonstration.
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List orders
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+    post:
+      operationId: createOrder
+      summary: Create a new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrder'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /orders/{orderId}:
+    parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getOrder
+      summary: Get order by ID
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found
+    delete:
+      operationId: deleteOrder
+      summary: Cancel and delete order
+      responses:
+        '204':
+          description: Order deleted
+
+components:
+  schemas:
+    Order:
+      type: object
+      required:
+        - id
+        - status
+        - items
+        - trackingNumber
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - cancelled
+        trackingNumber:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItem'
+        discount:
+          description: Optional promotional discount
+          oneOf:
+            - $ref: '#/components/schemas/FixedDiscount'
+            - $ref: '#/components/schemas/PercentageDiscount'
+
+    CreateOrder:
+      type: object
+      required:
+        - items
+      properties:
+        paymentMethod:
+          type: string
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LineItem'
+        notes:
+          type: string
+
+    LineItem:
+      type: object
+      required:
+        - sku
+        - quantity
+      properties:
+        sku:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+
+    FixedDiscount:
+      type: object
+      properties:
+        amount:
+          type: number
+
+    PercentageDiscount:
+      type: object
+      properties:
+        percent:
+          type: number
