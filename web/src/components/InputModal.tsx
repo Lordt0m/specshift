@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDialogFocus } from '../useDialogFocus';
 
 interface InputModalProps {
   isOpen: boolean;
@@ -6,6 +7,7 @@ interface InputModalProps {
   onCompare: (baseline: string, candidate: string) => Promise<void>;
   isLoading: boolean;
   errorMessage: string | null;
+  onInputChange: () => void;
 }
 
 export const InputModal: React.FC<InputModalProps> = ({
@@ -14,10 +16,12 @@ export const InputModal: React.FC<InputModalProps> = ({
   onCompare,
   isLoading,
   errorMessage,
+  onInputChange,
 }) => {
   const [baselineText, setBaselineText] = useState<string>('');
   const [candidateText, setCandidateText] = useState<string>('');
   const [localError, setLocalError] = useState<string | null>(null);
+  useDialogFocus(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -38,6 +42,7 @@ export const InputModal: React.FC<InputModalProps> = ({
     reader.onload = (event) => {
       const content = event.target?.result as string;
       setter(content);
+      onInputChange();
       setLocalError(null);
     };
     reader.onerror = () => {
@@ -50,6 +55,7 @@ export const InputModal: React.FC<InputModalProps> = ({
     const temp = baselineText;
     setBaselineText(candidateText);
     setCandidateText(temp);
+    onInputChange();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +66,10 @@ export const InputModal: React.FC<InputModalProps> = ({
     }
     if (!candidateText.trim()) {
       setLocalError('Please provide a candidate specification.');
+      return;
+    }
+    if ([baselineText, candidateText].some((value) => new TextEncoder().encode(value).length > 1024 * 1024)) {
+      setLocalError('Each document must be at most 1 MiB in UTF-8.');
       return;
     }
     setLocalError(null);
@@ -155,7 +165,7 @@ export const InputModal: React.FC<InputModalProps> = ({
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
               {/* Baseline Column */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
@@ -174,7 +184,7 @@ export const InputModal: React.FC<InputModalProps> = ({
                     <input
                       type="file"
                       accept=".json,.yaml,.yml"
-                      style={{ display: 'none' }}
+                      aria-label="Upload baseline file"
                       onChange={(e) => handleFileUpload(e, setBaselineText, 'Baseline')}
                     />
                   </label>
@@ -182,7 +192,7 @@ export const InputModal: React.FC<InputModalProps> = ({
                 <textarea
                   id="baseline-input"
                   value={baselineText}
-                  onChange={(e) => setBaselineText(e.target.value)}
+                  onChange={(e) => { setBaselineText(e.target.value); onInputChange(); }}
                   placeholder="Paste OpenAPI 3.0 baseline specification..."
                   rows={14}
                   style={{
@@ -216,7 +226,7 @@ export const InputModal: React.FC<InputModalProps> = ({
                     <input
                       type="file"
                       accept=".json,.yaml,.yml"
-                      style={{ display: 'none' }}
+                      aria-label="Upload candidate file"
                       onChange={(e) => handleFileUpload(e, setCandidateText, 'Candidate')}
                     />
                   </label>
@@ -224,7 +234,7 @@ export const InputModal: React.FC<InputModalProps> = ({
                 <textarea
                   id="candidate-input"
                   value={candidateText}
-                  onChange={(e) => setCandidateText(e.target.value)}
+                  onChange={(e) => { setCandidateText(e.target.value); onInputChange(); }}
                   placeholder="Paste OpenAPI 3.0 candidate specification..."
                   rows={14}
                   style={{
@@ -272,7 +282,8 @@ export const InputModal: React.FC<InputModalProps> = ({
               }}
             >
               <strong>Privacy Notice:</strong> Both specifications are transmitted to the server for in-memory comparison
-              under Policy v1. Specifications are not permanently saved, catalogued, or archived. Internal references only;
+              under Policy v1. The application does not intentionally retain inputs. Providers may keep access logs;
+              do not submit secrets. The free API may take about a minute to wake. Internal references only;
               external URLs are prohibited. Limit: 1 MiB per document.
             </div>
           </div>

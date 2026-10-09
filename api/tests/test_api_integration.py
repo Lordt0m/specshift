@@ -67,7 +67,7 @@ def test_compare_multipart_upload(api_client):
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["summary"]["total_findings"] == 8
+    assert data["summary"]["total_findings"] == 11
 
 
 def test_compare_missing_input(api_client):

@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
-from .comparison.engine import compare_specifications, SCHEMA_VERSION, ENGINE_VERSION
+from .comparison.engine import compare_specifications, SCHEMA_VERSION, ENGINE_VERSION, ComparisonTimeoutError
 from .comparison.parse import (
     ParseError,
     DocumentSizeLimitError,
@@ -69,16 +69,20 @@ def _extract_inputs(request: Request) -> Tuple[bytes, bytes]:
 
     # Try files first
     if "baseline" in request.FILES:
-        baseline_bytes = request.FILES["baseline"].read()
+        baseline_bytes = request.FILES["baseline"].read(MAX_DOCUMENT_BYTES + 1)
     elif isinstance(request.data, dict) and "baseline" in request.data:
         val = request.data["baseline"]
-        baseline_bytes = val.encode("utf-8") if isinstance(val, str) else bytes(val)
+        if not isinstance(val, str):
+            raise ValueError("Baseline must be a document string.")
+        baseline_bytes = val.encode("utf-8")
 
     if "candidate" in request.FILES:
-        candidate_bytes = request.FILES["candidate"].read()
+        candidate_bytes = request.FILES["candidate"].read(MAX_DOCUMENT_BYTES + 1)
     elif isinstance(request.data, dict) and "candidate" in request.data:
         val = request.data["candidate"]
-        candidate_bytes = val.encode("utf-8") if isinstance(val, str) else bytes(val)
+        if not isinstance(val, str):
+            raise ValueError("Candidate must be a document string.")
+        candidate_bytes = val.encode("utf-8")
 
     if not baseline_bytes:
         raise ValueError("Baseline specification is required (as file upload or string property).")
@@ -93,6 +97,8 @@ from django.core.exceptions import RequestDataTooBig
 
 def _handle_comparison_error(exc: Exception) -> Tuple[dict[str, Any], int]:
     """Map comparison exceptions to stable error codes and HTTP statuses."""
+    if isinstance(exc, ComparisonTimeoutError):
+        return {"code": "WORK_DEADLINE", "message": str(exc)}, 503
     if isinstance(exc, (DocumentSizeLimitError, RequestDataTooBig)):
         return {
             "code": "DOCUMENT_SIZE_EXCEEDED",

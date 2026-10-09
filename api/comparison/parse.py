@@ -13,6 +13,8 @@ import yaml
 MAX_DOCUMENT_BYTES = 1024 * 1024  # 1 MiB
 MAX_COMBINED_BYTES = 2 * 1024 * 1024  # 2 MiB
 MAX_NESTING_DEPTH = 64
+MAX_VALUES = 50000
+MAX_OPERATIONS = 2000
 SUPPORTED_VERSIONS = {"3.0.0", "3.0.1", "3.0.2", "3.0.3"}
 
 
@@ -97,11 +99,17 @@ class RestrictedSafeYamlLoader(yaml.SafeLoader):
         mapping: dict[Any, Any] = {}
         for key_node, value_node in node.value:
             key = self.construct_object(key_node, deep=deep)
+            if not isinstance(key, (str, int)) or isinstance(key, bool):
+                raise ParseError("YAML keys must be strings (numeric response codes are accepted).")
+            key = str(key)
             if key in seen_keys:
                 raise DuplicateKeyError(f"Duplicate mapping key '{key}' detected in YAML.")
             seen_keys.add(key)
             mapping[key] = self.construct_object(value_node, deep=deep)
         return mapping
+
+
+RestrictedSafeYamlLoader.add_constructor("tag:yaml.org,2002:timestamp", RestrictedSafeYamlLoader.construct_scalar)
 
 
 def _verify_depth(obj: Any, current_depth: int = 0) -> None:
@@ -113,6 +121,24 @@ def _verify_depth(obj: Any, current_depth: int = 0) -> None:
     elif isinstance(obj, list):
         for item in obj:
             _verify_depth(item, current_depth + 1)
+
+
+def _verify_values(obj: Any) -> None:
+    pending = [obj]
+    count = 0
+    while pending:
+        value = pending.pop()
+        count += 1
+        if count > MAX_VALUES:
+            raise DocumentSizeLimitError("Document exceeds the 50,000-value complexity limit.")
+        if isinstance(value, dict):
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
+        elif isinstance(value, float) and not math.isfinite(value):
+            raise ParseError("Non-finite numbers are prohibited.")
+        elif value is not None and not isinstance(value, (str, bool, int, float)):
+            raise ParseError("Only JSON-compatible scalar values are supported.")
 
 
 def parse_specification(content: str | bytes, name: str = "document") -> dict[str, Any]:
@@ -143,6 +169,8 @@ def parse_specification(content: str | bytes, name: str = "document") -> dict[st
                 object_pairs_hook=_detect_duplicate_pairs,
                 parse_constant=_check_finite_json_constant
             )
+        except RecursionError:
+            raise NestingDepthLimitError("JSON exceeds the nesting limit.") from None
         except json.JSONDecodeError as e:
             # If it started like JSON, report JSON error
             raise ParseError(f"Malformed JSON in {name}: {e.msg} at line {e.lineno} column {e.colno}")
@@ -159,6 +187,7 @@ def parse_specification(content: str | bytes, name: str = "document") -> dict[st
         raise ParseError(f"{name} must be a top-level JSON/YAML mapping object.")
 
     _verify_depth(parsed)
+    _verify_values(parsed)
 
     # Validate OpenAPI version
     openapi_version = parsed.get("openapi")
@@ -174,6 +203,31 @@ def parse_specification(content: str | bytes, name: str = "document") -> dict[st
 
     # Validate references across the document
     _validate_references_safety(parsed, name)
+    pending = [parsed]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, dict):
+            if "$ref" in value:
+                resolve_pointer(parsed, value["$ref"])
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
+
+    paths = parsed.get("paths")
+    if not isinstance(paths, dict):
+        raise ParseError("OpenAPI paths must be a mapping.")
+    methods = {"get", "post", "put", "patch", "delete", "options", "head", "trace"}
+    operations = 0
+    for path, item in paths.items():
+        if not path.startswith("/") or not isinstance(item, dict):
+            raise ParseError("Each path must start with '/' and contain a mapping.")
+        for method, operation in item.items():
+            if method in methods:
+                operations += 1
+                if not isinstance(operation, dict) or not isinstance(operation.get("responses"), dict):
+                    raise ParseError("Each operation must be a mapping with responses.")
+    if operations > MAX_OPERATIONS:
+        raise DocumentSizeLimitError("Document exceeds the 2,000-operation limit.")
 
     return parsed
 
@@ -190,6 +244,8 @@ def _validate_references_safety(obj: Any, name: str, current_path: str = "#") ->
                     f"External reference '{ref}' at {current_path} in {name} is prohibited by security policy. "
                     "Only internal '#/...' references are supported."
                 )
+            # Validate every target, including unused components.
+            # The root is supplied separately during the initial validation below.
         for k, v in obj.items():
             escaped_key = k.replace("~", "~0").replace("/", "~1")
             _validate_references_safety(v, name, f"{current_path}/{escaped_key}")
@@ -205,7 +261,7 @@ def resolve_pointer(document: dict[str, Any], pointer: str) -> Any:
     if pointer == "#" or pointer == "#/":
         return document
     
-    parts = pointer.lstrip("#/").split("/")
+    parts = pointer[2:].split("/")
     current: Any = document
     for part in parts:
         token = part.replace("~1", "/").replace("~0", "~")

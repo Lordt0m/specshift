@@ -97,9 +97,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .app-main {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: minmax(0, 1fr) 380px;
   min-height: calc(100vh - 65px);
   overflow: hidden;
+}
+
+.app-main > * { min-width: 0; }
+[role="button"]:focus-visible { outline: 2px solid var(--highlight); outline-offset: 2px; }
+@media (max-width: 600px) {
+  [role="button"] { flex-wrap: wrap; }
 }
 
 @media (max-width: 1024px) {

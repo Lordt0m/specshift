@@ -19,15 +19,17 @@ def test_demo_fixture_golden_run():
     # Summary checks
     summary = result["summary"]
     assert summary["breaking_count"] == 5
-    assert summary["review_count"] == 2
-    assert summary["non_breaking_count"] == 1
-    assert summary["total_findings"] == 8
+    # Metadata edits and the newly introduced path-level parameter are now
+    # visible instead of being silently discarded by the old implementation.
+    assert summary["review_count"] == 3
+    assert summary["non_breaking_count"] == 3
+    assert summary["total_findings"] == 11
     assert summary["coverage_gap_count"] == 1
     assert summary["conclusion"] == "Breaking changes found (1 coverage gap present)"
 
     # Rule IDs present
     rule_ids = {f["rule_id"] for f in result["findings"]}
-    expected_rule_ids = {"OP-01", "OP-02", "MT-02", "RS-02", "SC-03", "SC-04", "SC-05", "SC-10"}
+    expected_rule_ids = {"OP-01", "OP-02", "MT-01", "MT-02", "RS-02", "SC-03", "SC-04", "SC-05", "SC-10", "UN-01"}
     assert rule_ids == expected_rule_ids
 
     # Verify multi-operation aggregation for shared schema

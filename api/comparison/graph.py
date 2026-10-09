@@ -6,6 +6,7 @@ and referenced schemas with deterministic node and edge IDs.
 
 from dataclasses import dataclass, field
 from typing import Any, Optional
+from .parse import DocumentSizeLimitError
 
 
 @dataclass
@@ -62,12 +63,16 @@ class DependencyGraph:
         self.reverse_adjacency: dict[str, set[str]] = {}
 
     def add_node(self, node: GraphNode) -> None:
+        if len(self.nodes) >= 7000 and node.id not in self.nodes:
+            raise DocumentSizeLimitError("Graph node limit exceeded.")
         if node.id not in self.nodes:
             self.nodes[node.id] = node
             self.adjacency[node.id] = set()
             self.reverse_adjacency[node.id] = set()
 
     def add_edge(self, edge: GraphEdge) -> None:
+        if len(self.edges) >= 20000 and edge.id not in self.edges:
+            raise DocumentSizeLimitError("Graph edge limit exceeded.")
         if edge.id not in self.edges:
             self.edges[edge.id] = edge
             self.adjacency.setdefault(edge.source, set()).add(edge.target)

@@ -5,6 +5,7 @@ Implements directional compatibility analysis under Compatibility Policy v1.
 
 from dataclasses import dataclass, field
 import hashlib
+import time
 from typing import Any, Optional
 
 from .graph import DependencyGraph, GraphNode, GraphEdge
@@ -20,6 +21,10 @@ from .rules import RULE_REGISTRY, POLICY_VERSION, Rule
 
 SCHEMA_VERSION = "1.0.0"
 ENGINE_VERSION = "1.0.0"
+
+
+class ComparisonTimeoutError(ValueError):
+    pass
 
 
 @dataclass
@@ -78,7 +83,10 @@ def _make_stable_id(prefix: str, *parts: Any) -> str:
     cleaned = [str(p).lower().replace(" ", "-").replace("/", "-").replace("~", "-").strip("-_#") for p in parts if p]
     base = f"{prefix}-" + "-".join(filter(None, cleaned))
     # sanitize characters
-    return "".join(c if c.isalnum() or c == "-" else "_" for c in base)
+    readable = "".join(c if c.isalnum() or c == "-" else "_" for c in base)
+    import json
+    digest = hashlib.sha256(json.dumps(parts, ensure_ascii=False).encode()).hexdigest()[:16]
+    return readable[:120] + "-" + digest
 
 
 class ComparisonEngine:
@@ -90,6 +98,15 @@ class ComparisonEngine:
         self.coverage_gaps_map: dict[str, CoverageGap] = {}
         self.warnings: list[str] = []
         self.visited_schema_pairs: set[tuple[str, str, str]] = set()
+        self.graph_visited: set[tuple[int, str, str]] = set()
+        self.deadline = time.monotonic() + 8
+
+    def _check_budget(self):
+        from .parse import DocumentSizeLimitError
+        if time.monotonic() > self.deadline:
+            raise ComparisonTimeoutError("Comparison exceeded its work deadline. Use smaller documents.")
+        if len(self.findings_map) + len(self.coverage_gaps_map) > 10000:
+            raise DocumentSizeLimitError("Comparison exceeds the 10,000-finding/gap limit.")
 
     def run(self) -> dict[str, Any]:
         # 1. Build graph for both specs
@@ -101,6 +118,27 @@ class ComparisonEngine:
         cand_ops = self._index_operations(self.candidate, "#")
 
         all_op_keys = sorted(list(set(base_ops.keys()) | set(cand_ops.keys())))
+
+        # Referenced parameter/body/response/path objects are not yet indexed
+        # semantically. Surface that limitation even in an unchanged document.
+        all_labels = [f"{method} {path}" for method, path in all_op_keys]
+        for document in (self.baseline, self.candidate):
+            pending = [(document, "#")]
+            while pending:
+                value, pointer = pending.pop()
+                self._check_budget()
+                if isinstance(value, dict):
+                    ref = value.get("$ref")
+                    if ref and not ref.startswith("#/components/schemas/"):
+                        self._record_gap(CoverageGap(
+                            id=_make_stable_id("gap", "reference-scope", pointer), pointer=pointer,
+                            construct="referenced-contract-object",
+                            reason="Non-schema reference semantics are outside the implemented index. Review required.",
+                            affected_operations=all_labels,
+                        ))
+                    pending.extend((child, append_pointer(pointer, key)) for key, child in value.items())
+                elif isinstance(value, list):
+                    pending.extend((child, append_pointer(pointer, index)) for index, child in enumerate(value))
 
         for op_key in all_op_keys:
             base_op = base_ops.get(op_key)
@@ -154,6 +192,9 @@ class ComparisonEngine:
                 # Both exist: compare operation details
                 assert base_op is not None and cand_op is not None
                 self._compare_retained_operation(base_op, cand_op, op_label)
+
+        # Preserve changed semantics not yet covered by a precise rule.
+        self._audit_unclassified_changes(base_ops, cand_ops)
 
         # 3. Compute summary and conclusion
         findings_list = sorted(self.findings_map.values(), key=lambda f: f.id)
@@ -214,6 +255,17 @@ class ComparisonEngine:
         }
 
     def _record_finding(self, finding: Finding) -> None:
+        self._check_budget()
+        # Evidence is the exact value at the pointer, not a derived boolean or
+        # subset which could be mistaken for the original source fragment.
+        for side, document, pointer in (("before", self.baseline, finding.origin_pointer), ("after", self.candidate, finding.candidate_pointer)):
+            from .parse import MissingInternalReferenceError
+            try:
+                value = resolve_pointer(document, pointer) if pointer else ABSENT
+            except MissingInternalReferenceError:
+                value = ABSENT
+            setattr(finding, side, value)
+            setattr(finding, side + "_presence", get_presence_kind(value))
         if finding.id in self.findings_map:
             # Aggregate affected operations without duplicating finding
             existing = self.findings_map[finding.id]
@@ -223,7 +275,48 @@ class ComparisonEngine:
         else:
             self.findings_map[finding.id] = finding
 
+    def _audit_unclassified_changes(self, base_ops, cand_ops):
+        """Conservatively expose edits outside the precise rule branches."""
+        known = {p for f in self.findings_map.values() for p in (f.origin_pointer, f.candidate_pointer) if p}
+        operations = sorted({f"{method} {path}" for method, path in set(base_ops) | set(cand_ops)})
+
+        def walk(before, after, pointer):
+            self._check_budget()
+            if before == after:
+                return
+            if pointer in known:
+                return
+            if pointer.rsplit("/", 1)[-1] in {"enum", "required"} and isinstance(before, list) and isinstance(after, list):
+                import json
+                if {json.dumps(x, sort_keys=True) for x in before} == {json.dumps(x, sort_keys=True) for x in after}:
+                    return
+            if (isinstance(before, dict) or before is ABSENT) and (isinstance(after, dict) or after is ABSENT):
+                b_map = {} if before is ABSENT else before
+                c_map = {} if after is ABSENT else after
+                for key in sorted(set(b_map) | set(c_map)):
+                    walk(b_map.get(key, ABSENT), c_map.get(key, ABSENT), append_pointer(pointer, key))
+                return
+            metadata = pointer.rsplit("/", 1)[-1] in {"description", "summary", "example", "tags", "title"} or pointer == "#/info/version"
+            # Existing precise findings cover child changes such as enum members.
+            if any(pointer.startswith(p + "/") for p in known):
+                return
+            rule = RULE_REGISTRY["MT-01" if metadata else "UN-01"]
+            self._record_finding(Finding(
+                id=_make_stable_id("finding", rule.id, pointer), rule_id=rule.id,
+                classification="non_breaking" if metadata else "review_required",
+                context="metadata" if metadata else "operation",
+                origin_pointer=None if before is ABSENT else pointer,
+                candidate_pointer=None if after is ABSENT else pointer,
+                before=before, after=after,
+                before_presence=get_presence_kind(before), after_presence=get_presence_kind(after),
+                explanation="Metadata changed." if metadata else "This edit is not fully classified by the implemented rules; review its exact evidence.",
+                policy_rule=rule.title, affected_operations=operations,
+            ))
+
+        walk(self.baseline, self.candidate, "#")
+
     def _record_gap(self, gap: CoverageGap) -> None:
+        self._check_budget()
         if gap.id in self.coverage_gaps_map:
             existing = self.coverage_gaps_map[gap.id]
             for op in gap.affected_operations:
@@ -284,6 +377,7 @@ class ComparisonEngine:
     def _link_graph_schema(
         self, parent_node_id: str, schema_obj: Any, doc: dict[str, Any], context: str, edge_label: str
     ) -> None:
+        self._check_budget()
         if not isinstance(schema_obj, dict):
             return
 
@@ -302,11 +396,11 @@ class ComparisonEngine:
             edge_id = f"edge:{parent_node_id}->{node_id}:{context}"
             self.graph.add_edge(GraphEdge(id=edge_id, source=parent_node_id, target=node_id, label=edge_label, context=context))
             # Recurse into referenced schema if inside components
-            try:
+            key = (id(doc), ref, context)
+            if key not in self.graph_visited:
+                self.graph_visited.add(key)
                 resolved = resolve_pointer(doc, ref)
                 self._trace_schema_dependencies(node_id, resolved, doc, context)
-            except Exception:
-                pass
         elif schema_obj.get("type") == "array" and "items" in schema_obj:
             self._link_graph_schema(parent_node_id, schema_obj["items"], doc, context, edge_label)
         elif "properties" in schema_obj and isinstance(schema_obj["properties"], dict):
@@ -600,8 +694,8 @@ class ComparisonEngine:
                         rule_id=rule.id,
                         classification=rule.request_classification,
                         context="request",
-                        origin_pointer=append_pointer(base_op["pointer"], "requestBody/required"),
-                        candidate_pointer=append_pointer(cand_op["pointer"], "requestBody/required"),
+                        origin_pointer=append_pointer(append_pointer(base_op["pointer"], "requestBody"), "required"),
+                        candidate_pointer=append_pointer(append_pointer(cand_op["pointer"], "requestBody"), "required"),
                         before=False,
                         before_presence="present",
                         after=True,
@@ -620,8 +714,8 @@ class ComparisonEngine:
                         rule_id=rule.id,
                         classification=rule.request_classification,
                         context="request",
-                        origin_pointer=append_pointer(base_op["pointer"], "requestBody/required"),
-                        candidate_pointer=append_pointer(cand_op["pointer"], "requestBody/required"),
+                        origin_pointer=append_pointer(append_pointer(base_op["pointer"], "requestBody"), "required"),
+                        candidate_pointer=append_pointer(append_pointer(cand_op["pointer"], "requestBody"), "required"),
                         before=True,
                         before_presence="present",
                         after=False,
@@ -647,7 +741,7 @@ class ComparisonEngine:
                             rule_id=rule.id,
                             classification=rule.request_classification,
                             context="request",
-                            origin_pointer=append_pointer(base_op["pointer"], f"requestBody/content/{mt}"),
+                            origin_pointer=append_pointer(append_pointer(append_pointer(base_op["pointer"], "requestBody"), "content"), mt),
                             candidate_pointer=None,
                             before=mt,
                             before_presence="present",
@@ -668,7 +762,7 @@ class ComparisonEngine:
                             classification=rule.request_classification,
                             context="request",
                             origin_pointer=None,
-                            candidate_pointer=append_pointer(cand_op["pointer"], f"requestBody/content/{mt}"),
+                            candidate_pointer=append_pointer(append_pointer(append_pointer(cand_op["pointer"], "requestBody"), "content"), mt),
                             before=None,
                             before_presence="absent",
                             after=mt,
@@ -685,8 +779,8 @@ class ComparisonEngine:
                         self._compare_schemas(
                             bs,
                             cs,
-                            append_pointer(base_op["pointer"], f"requestBody/content/{mt}/schema"),
-                            append_pointer(cand_op["pointer"], f"requestBody/content/{mt}/schema"),
+                            append_pointer(append_pointer(append_pointer(append_pointer(base_op["pointer"], "requestBody"), "content"), mt), "schema"),
+                            append_pointer(append_pointer(append_pointer(append_pointer(cand_op["pointer"], "requestBody"), "content"), mt), "schema"),
                             context="request",
                             fallback_affected_ops=[op_label],
                         )
@@ -706,7 +800,7 @@ class ComparisonEngine:
                         rule_id=rule.id,
                         classification=rule.response_classification,
                         context="response",
-                        origin_pointer=append_pointer(base_op["pointer"], f"responses/{st}"),
+                        origin_pointer=append_pointer(append_pointer(base_op["pointer"], "responses"), st),
                         candidate_pointer=None,
                         before=str(st),
                         before_presence="present",
@@ -727,7 +821,7 @@ class ComparisonEngine:
                         classification=rule.response_classification,
                         context="response",
                         origin_pointer=None,
-                        candidate_pointer=append_pointer(cand_op["pointer"], f"responses/{st}"),
+                        candidate_pointer=append_pointer(append_pointer(cand_op["pointer"], "responses"), st),
                         before=None,
                         before_presence="absent",
                         after=str(st),
@@ -754,7 +848,7 @@ class ComparisonEngine:
                                 rule_id=rule.id,
                                 classification=rule.response_classification,
                                 context="response",
-                                origin_pointer=append_pointer(base_op["pointer"], f"responses/{st}/content/{mt}"),
+                                origin_pointer=append_pointer(append_pointer(append_pointer(append_pointer(base_op["pointer"], "responses"), st), "content"), mt),
                                 candidate_pointer=None,
                                 before=mt,
                                 before_presence="present",
@@ -775,7 +869,7 @@ class ComparisonEngine:
                                 classification=rule.response_classification,
                                 context="response",
                                 origin_pointer=None,
-                                candidate_pointer=append_pointer(cand_op["pointer"], f"responses/{st}/content/{mt}"),
+                                candidate_pointer=append_pointer(append_pointer(append_pointer(append_pointer(cand_op["pointer"], "responses"), st), "content"), mt),
                                 before=None,
                                 before_presence="absent",
                                 after=mt,
@@ -792,8 +886,8 @@ class ComparisonEngine:
                             self._compare_schemas(
                                 bs,
                                 cs,
-                                append_pointer(base_op["pointer"], f"responses/{st}/content/{mt}/schema"),
-                                append_pointer(cand_op["pointer"], f"responses/{st}/content/{mt}/schema"),
+                                append_pointer(append_pointer(append_pointer(append_pointer(append_pointer(base_op["pointer"], "responses"), st), "content"), mt), "schema"),
+                                append_pointer(append_pointer(append_pointer(append_pointer(append_pointer(cand_op["pointer"], "responses"), st), "content"), mt), "schema"),
                                 context="response",
                                 fallback_affected_ops=[op_label],
                             )
@@ -830,6 +924,11 @@ class ComparisonEngine:
 
         pair_key = (eff_b_ptr, eff_c_ptr, context)
         if pair_key in self.visited_schema_pairs:
+            for finding in self.findings_map.values():
+                if finding.context == context and finding.origin_pointer and (
+                    finding.origin_pointer == eff_b_ptr or finding.origin_pointer.startswith(eff_b_ptr + "/")
+                ):
+                    finding.affected_operations.extend(fallback_affected_ops)
             return
         self.visited_schema_pairs.add(pair_key)
 
@@ -840,11 +939,24 @@ class ComparisonEngine:
         if not isinstance(resolved_b, dict) or not isinstance(resolved_c, dict):
             return
 
-        affected_ops = self._get_affected_ops_for_pointer(eff_b_ptr, fallback_ops=fallback_affected_ops)
+        affected_ops = fallback_affected_ops
+        # Contextual aggregation follows actual visits, not the union graph's
+        # request/response ancestors. A shared ref may have different verdicts.
+        for finding in self.findings_map.values():
+            if finding.context == context and finding.origin_pointer and (
+                finding.origin_pointer == eff_b_ptr or finding.origin_pointer.startswith(eff_b_ptr + "/")
+            ):
+                finding.affected_operations.extend(affected_ops)
 
         # Check coverage gaps (composition: oneOf, allOf, anyOf, not, discriminator)
-        for comp_kw in ["oneOf", "allOf", "anyOf", "not", "discriminator"]:
-            if comp_kw in resolved_b or comp_kw in resolved_c:
+        supported = {"type", "properties", "required", "items", "enum", "nullable", "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems", "additionalProperties", "description", "title", "example", "default", "$ref"}
+        unsupported = (set(resolved_b) | set(resolved_c)) - supported
+        if (not resolved_b.get("type") or not resolved_c.get("type")) and not unsupported.intersection({"oneOf", "allOf", "anyOf", "not"}):
+            unsupported.add("implicit-type")
+        if any(isinstance(schema.get("additionalProperties"), dict) for schema in (resolved_b, resolved_c)):
+            unsupported.add("additionalProperties")
+        for comp_kw in sorted(unsupported):
+            if comp_kw in resolved_b or comp_kw in resolved_c or comp_kw == "implicit-type":
                 gap_id = _make_stable_id("gap", comp_kw, eff_b_ptr)
                 self._record_gap(
                     CoverageGap(
@@ -884,10 +996,11 @@ class ComparisonEngine:
         b_enum = resolved_b.get("enum")
         c_enum = resolved_c.get("enum")
         if isinstance(b_enum, list) and isinstance(c_enum, list):
-            b_set = set(b_enum)
-            c_set = set(c_enum)
-            removed_enums = sorted(list(b_set - c_set))
-            added_enums = sorted(list(c_set - b_set))
+            import json
+            b_set = {json.dumps(value, sort_keys=True) for value in b_enum}
+            c_set = {json.dumps(value, sort_keys=True) for value in c_enum}
+            removed_enums = [json.loads(value) for value in sorted(b_set - c_set)]
+            added_enums = [json.loads(value) for value in sorted(c_set - b_set)]
 
             if removed_enums:
                 rule = RULE_REGISTRY["SC-02"]
@@ -1102,6 +1215,18 @@ class ComparisonEngine:
             b_is_req = p_name in b_req_list
             c_is_req = p_name in c_req_list
 
+            # These directional fields are intentionally conservative until
+            # the contextual projection is fully implemented and tested.
+            if any(isinstance(prop, dict) and (prop.get("readOnly") or prop.get("writeOnly")) for prop in (bp, cp)):
+                self._record_gap(CoverageGap(
+                    id=_make_stable_id("gap", "directional-field", context, eff_b_ptr, p_name),
+                    pointer=append_pointer(append_pointer(eff_b_ptr, "properties"), p_name),
+                    construct="readOnly/writeOnly",
+                    reason="Directional property projection requires review; no property compatibility verdict is asserted.",
+                    affected_operations=affected_ops,
+                ))
+                continue
+
             if bp is None and cp is not None:
                 # Added property
                 if c_is_req:
@@ -1139,7 +1264,7 @@ class ComparisonEngine:
                             classification=cls,
                             context=context,
                             origin_pointer=None,
-                            candidate_pointer=append_pointer(eff_c_ptr, f"properties/{p_name}"),
+                            candidate_pointer=append_pointer(append_pointer(eff_c_ptr, "properties"), p_name),
                             before=None,
                             before_presence="absent",
                             after=cp,
@@ -1160,7 +1285,7 @@ class ComparisonEngine:
                         rule_id=rule.id,
                         classification=cls,
                         context=context,
-                        origin_pointer=append_pointer(eff_b_ptr, f"properties/{p_name}"),
+                        origin_pointer=append_pointer(append_pointer(eff_b_ptr, "properties"), p_name),
                         candidate_pointer=None,
                         before=bp,
                         before_presence="present",
@@ -1224,8 +1349,8 @@ class ComparisonEngine:
                 self._compare_schemas(
                     bp,
                     cp,
-                    append_pointer(eff_b_ptr, f"properties/{p_name}"),
-                    append_pointer(eff_c_ptr, f"properties/{p_name}"),
+                    append_pointer(append_pointer(eff_b_ptr, "properties"), p_name),
+                    append_pointer(append_pointer(eff_c_ptr, "properties"), p_name),
                     context=context,
                     fallback_affected_ops=affected_ops,
                 )

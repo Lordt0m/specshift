@@ -287,6 +287,7 @@ def generate_html_report(comparison_result: dict[str, Any]) -> str:
     </div>
 """
 
+    html_out += '<details><summary>Complete audit payload, including digests and warnings</summary><pre>' + html.escape(generate_json_report(comparison_result)) + '</pre></details>'
     html_out += """  </div>
 </body>
 </html>

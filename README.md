@@ -22,7 +22,7 @@ Rather than presenting noisy git diffs or unexplained badges, SpecShift evaluate
 
 4. **Security & Privacy by Design**
    - Stateless, in-memory processing: uploaded files are never persisted to disk, database, or cloud storage.
-   - Strict bounds: 1 MiB document cap, 2 MiB request body cap (returning 413), nesting depth limit 64.
+   - Strict bounds: 1 MiB per document, 2 MiB combined document content, 4 MiB wire-format cap including escaping/transport overhead, nesting depth 64 and finite graph/work budgets.
    - Safe parsing: rejects YAML anchors and aliases, duplicate mapping keys, and non-finite numbers.
    - Prohibits external `$ref` URLs (`http`, `https`, `file`, relative paths); only internal `#/` references resolved.
    - Self-contained HTML exports contain zero external CDNs, zero JavaScript, and full string escaping.
@@ -34,7 +34,7 @@ Rather than presenting noisy git diffs or unexplained badges, SpecShift evaluate
 
 ## Tech Stack
 
-- **Backend / Engine:** Python 3.13, Django 6.1 LTS, Django REST Framework, PyYAML
+- **Backend / Engine:** Python 3.13, Django 6.1.2 (installed implementation version), Django REST Framework, PyYAML
 - **Frontend:** React 19, TypeScript, Vite, `@xyflow/react`
 - **Testing:** Pytest, pytest-django
 

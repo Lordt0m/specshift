@@ -37,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.6rem' }}>
             <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
               SpecShift
             </span>

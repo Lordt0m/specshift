@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -22,6 +24,10 @@ jobs:
       - name: Run Python tests
         run: |
           pytest api/tests
+      - name: Check dependencies and source credential patterns
+        run: |
+          python -m pip check
+          python scripts/check_secrets.py
 
   frontend:
     runs-on: ubuntu-latest
@@ -39,3 +45,6 @@ jobs:
         run: |
           cd web
           npm run build
+      - name: Audit runtime dependencies
+        working-directory: web
+        run: npm audit --omit=dev --audit-level=high

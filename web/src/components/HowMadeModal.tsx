@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDialogFocus } from '../useDialogFocus';
 
 interface HowMadeModalProps {
   isOpen: boolean;
@@ -6,6 +7,7 @@ interface HowMadeModalProps {
 }
 
 export const HowMadeModal: React.FC<HowMadeModalProps> = ({ isOpen, onClose }) => {
+  useDialogFocus(isOpen, onClose);
   if (!isOpen) return null;
 
   return (

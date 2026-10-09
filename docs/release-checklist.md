@@ -1,5 +1,7 @@
 # SpecShift Release Checklist
 
+Current gate authority: `release-verification.md` (Codex takeover, 9 October 2026). The inherited table below overstates browser QA and complete policy coverage; those gates are reopened. Deployment authorization has now been granted, including explicit public GitHub source visibility. Credential and verification gates still apply.
+
 Evidence-backed release gate tracking for SpecShift.
 
 | Phase / Gate | Description | Status | Evidence / Notes |

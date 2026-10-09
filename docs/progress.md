@@ -1,5 +1,7 @@
 # SpecShift Implementation Progress
 
+Deployment takeover: 9 October 2026. See `release-verification.md` for the current independently checked results and unresolved gates. Phase PASS labels below are retained as historical Antigravity assertions and are not a current release certification.
+
 ## Project Baseline
 - **Date**: 9 October 2026
 - **Developer**: Ayotomiwa Ojo (via Antigravity / Ponytail mode)

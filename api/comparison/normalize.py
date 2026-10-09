@@ -35,9 +35,14 @@ def append_pointer(base_pointer: str, token: str | int) -> str:
 
 def compute_canonical_digest(document: dict[str, Any]) -> str:
     """Compute deterministic SHA-256 digest of normalized document."""
-    canonical_json = json.dumps(
-        document, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str
-    )
+    def canonical(value, key=None):
+        if isinstance(value, dict):
+            return {k: canonical(v, k) for k, v in value.items()}
+        if isinstance(value, list):
+            items = [canonical(v) for v in value]
+            return sorted(items, key=lambda v: json.dumps(v, sort_keys=True)) if key in {"enum", "required"} else items
+        return value
+    canonical_json = json.dumps(canonical(document), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
 
 

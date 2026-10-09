@@ -7,6 +7,11 @@ import { OperationsList } from './components/OperationsList';
 import { InputModal } from './components/InputModal';
 import { HowMadeModal } from './components/HowMadeModal';
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (char) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[char]!));
+
 export const App: React.FC = () => {
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
@@ -16,6 +21,8 @@ export const App: React.FC = () => {
   const [isHowMadeOpen, setIsHowMadeOpen] = useState<boolean>(false);
   const [isComparing, setIsComparing] = useState<boolean>(false);
   const [compareError, setCompareError] = useState<string | null>(null);
+  const [lastInputs, setLastInputs] = useState<{baseline: string; candidate: string} | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   // Load bundled recorded sample on mount
   useEffect(() => {
@@ -78,7 +85,8 @@ export const App: React.FC = () => {
     setIsComparing(true);
     setCompareError(null);
     try {
-      const response = await fetch('/api/compare/', {
+      const response = await fetch(`${API_BASE}/api/compare/`, {
+        signal: AbortSignal.timeout(90000),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,6 +106,7 @@ export const App: React.FC = () => {
 
       const data: ComparisonResult = await response.json();
       setResult(data);
+      setLastInputs({baseline, candidate});
       setIsSample(false);
       setIsStale(false);
       if (data.findings.length > 0) {
@@ -129,9 +138,17 @@ export const App: React.FC = () => {
     if (!result) return;
     // Attempt download from API if possible or create client-side self-contained HTML
     try {
-      const htmlContent = `<!DOCTYPE html>
+      let htmlContent = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>SpecShift Report</title></head>
-<body><h1>SpecShift Report</h1><pre>${JSON.stringify(result, null, 2)}</pre></body></html>`;
+<body><h1>SpecShift Report</h1><p>Baseline to candidate. Full comparison, independent of UI filters.</p><pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre></body></html>`;
+      if (!isSample && lastInputs) {
+        const response = await fetch(`${API_BASE}/api/report/`, {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(lastInputs), signal: AbortSignal.timeout(90000),
+        });
+        if (!response.ok) throw new Error(`Report request failed (${response.status}). Retry shortly.`);
+        htmlContent = await response.text();
+      }
       const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -140,7 +157,7 @@ export const App: React.FC = () => {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Failed to download HTML report:', err);
+      setReportError(err instanceof Error ? err.message : 'Report download failed.');
     }
   };
 
@@ -160,6 +177,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Studio Viewport */}
+      <p role="status" style={{padding: '0.4rem 1.5rem'}}>{isComparing ? 'Comparing. The free API may take about a minute to wake.' : reportError || (isStale ? 'Showing the previous comparison. Run comparison to review edited inputs.' : '')}</p>
       <main className="app-main">
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
           {/* Top: Impact Map Canvas */}
@@ -198,6 +216,7 @@ export const App: React.FC = () => {
         onCompare={handleCompare}
         isLoading={isComparing}
         errorMessage={compareError}
+        onInputChange={() => setIsStale(true)}
       />
 
       <HowMadeModal isOpen={isHowMadeOpen} onClose={() => setIsHowMadeOpen(false)} />

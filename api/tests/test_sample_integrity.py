@@ -17,7 +17,4 @@ def test_public_sample_matches_engine_run():
     fresh_result = compare_specifications(baseline_bytes, candidate_bytes)
     checked_in_result = json.loads(SAMPLE_JSON_PATH.read_text(encoding="utf-8"))
 
-    assert checked_in_result["summary"] == fresh_result["summary"]
-    assert len(checked_in_result["findings"]) == len(fresh_result["findings"])
-    assert {f["id"] for f in checked_in_result["findings"]} == {f["id"] for f in fresh_result["findings"]}
-    assert checked_in_result["coverage_gaps"] == fresh_result["coverage_gaps"]
+    assert checked_in_result == fresh_result

@@ -5,8 +5,6 @@ import {
   Controls,
   Node,
   Edge,
-  useNodesState,
-  useEdgesState,
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -196,8 +194,8 @@ export const ImpactMap: React.FC<ImpactMapProps> = ({
     });
   }, [graphData.edges, highlightedNodeIds, selectedFinding]);
 
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+  // The map is read-only. Derive its display from the current result and
+  // selection instead of freezing the first result in useNodesState.
 
   return (
     <div
@@ -216,6 +214,8 @@ export const ImpactMap: React.FC<ImpactMapProps> = ({
           background: 'var(--surface)',
           borderBottom: '1px solid var(--border)',
           display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '0.78rem',
@@ -236,10 +236,8 @@ export const ImpactMap: React.FC<ImpactMapProps> = ({
 
       <div style={{ flex: 1, position: 'relative' }}>
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
+          nodes={initialNodes}
+          edges={initialEdges}
           fitView
           minZoom={0.3}
           maxZoom={1.8}

@@ -3,14 +3,14 @@
   "engine_version": "1.0.0",
   "policy_version": "v1",
   "input_digests": {
-    "baseline": "cf2a7144ed168559e156f1ace2972aa57f00c17ca02b9ef26b1fe2867ed2e678",
-    "candidate": "5417f46e28f1fe4f325cebb56fbdd8b7ba5ebbc8ebef8d190f4b2d20ffa04b66"
+    "baseline": "543feae759d7807b9d1db3e084143150cf4bab803292627cca8d5c8a79c9243f",
+    "candidate": "0ae1101faa0743241ac563b485ce2a67a62ef3ede6f7081a544194105c156b83"
   },
   "summary": {
     "breaking_count": 5,
-    "review_count": 2,
-    "non_breaking_count": 1,
-    "total_findings": 8,
+    "review_count": 3,
+    "non_breaking_count": 3,
+    "total_findings": 11,
     "coverage_gap_count": 1,
     "total_operations": 5,
     "covered_operations": 2,
@@ -45,7 +45,49 @@
   ],
   "findings": [
     {
-      "id": "finding-mt-02-get--orders-_orderid_-opid",
+      "id": "finding-mt-01-info-description-a41fe5c5453c22da",
+      "rule_id": "MT-01",
+      "classification": "non_breaking",
+      "context": "metadata",
+      "origin_pointer": "#/info/description",
+      "candidate_pointer": "#/info/description",
+      "before": "Fictional order API baseline contract for change review demonstration.",
+      "before_presence": "present",
+      "after": "Fictional order API candidate contract for change review demonstration.",
+      "after_presence": "present",
+      "explanation": "Metadata changed.",
+      "policy_rule": "Description/summary/example/tag edit only",
+      "affected_operations": [
+        "DELETE /orders/{orderId}",
+        "GET /orders",
+        "GET /orders/{orderId}",
+        "POST /orders",
+        "POST /orders/{orderId}/cancel"
+      ]
+    },
+    {
+      "id": "finding-mt-01-info-version-7a1d16e5990431bd",
+      "rule_id": "MT-01",
+      "classification": "non_breaking",
+      "context": "metadata",
+      "origin_pointer": "#/info/version",
+      "candidate_pointer": "#/info/version",
+      "before": "2026-01-01",
+      "before_presence": "present",
+      "after": "2026-06-01",
+      "after_presence": "present",
+      "explanation": "Metadata changed.",
+      "policy_rule": "Description/summary/example/tag edit only",
+      "affected_operations": [
+        "DELETE /orders/{orderId}",
+        "GET /orders",
+        "GET /orders/{orderId}",
+        "POST /orders",
+        "POST /orders/{orderId}/cancel"
+      ]
+    },
+    {
+      "id": "finding-mt-02-get--orders-_orderid_-opid-adc42cae84cf9bce",
       "rule_id": "MT-02",
       "classification": "review_required",
       "context": "operation",
@@ -62,13 +104,21 @@
       ]
     },
     {
-      "id": "finding-op-01-delete-orders-_orderid_",
+      "id": "finding-op-01-delete-orders-_orderid_-a6f64176a410c40e",
       "rule_id": "OP-01",
       "classification": "breaking",
       "context": "operation",
       "origin_pointer": "#/paths/~1orders~1{orderId}/delete",
       "candidate_pointer": null,
-      "before": "DELETE /orders/{orderId}",
+      "before": {
+        "operationId": "deleteOrder",
+        "summary": "Cancel and delete order",
+        "responses": {
+          "204": {
+            "description": "Order deleted"
+          }
+        }
+      },
       "before_presence": "present",
       "after": null,
       "after_presence": "absent",
@@ -79,7 +129,7 @@
       ]
     },
     {
-      "id": "finding-op-02-post-orders-_orderid_-cancel",
+      "id": "finding-op-02-post-orders-_orderid_-cancel-633b7d3c1f6f52e3",
       "rule_id": "OP-02",
       "classification": "non_breaking",
       "context": "operation",
@@ -87,7 +137,15 @@
       "candidate_pointer": "#/paths/~1orders~1{orderId}~1cancel/post",
       "before": null,
       "before_presence": "absent",
-      "after": "POST /orders/{orderId}/cancel",
+      "after": {
+        "operationId": "cancelOrder",
+        "summary": "Request cancellation of an order",
+        "responses": {
+          "202": {
+            "description": "Order cancellation accepted"
+          }
+        }
+      },
       "after_presence": "present",
       "explanation": "Operation 'POST /orders/{orderId}/cancel' was added in candidate.",
       "policy_rule": "Add method/path",
@@ -96,15 +154,17 @@
       ]
     },
     {
-      "id": "finding-rs-02-post--orders-409",
+      "id": "finding-rs-02-post--orders-409-6a798b59cd7532ca",
       "rule_id": "RS-02",
       "classification": "review_required",
       "context": "response",
       "origin_pointer": null,
-      "candidate_pointer": "#/paths/~1orders/post/responses~1409",
+      "candidate_pointer": "#/paths/~1orders/post/responses/409",
       "before": null,
       "before_presence": "absent",
-      "after": "409",
+      "after": {
+        "description": "Conflict creating duplicate order"
+      },
       "after_presence": "present",
       "explanation": "Added response status code '409'. Clients may encounter an unhandled status code.",
       "policy_rule": "Add response status/media type",
@@ -113,12 +173,12 @@
       ]
     },
     {
-      "id": "finding-sc-03-response-components-schemas-order-properties-1status-enum-add",
+      "id": "finding-sc-03-response-components-schemas-order-properties-status-enum-add-061405a67574c92f",
       "rule_id": "SC-03",
       "classification": "breaking",
       "context": "response",
-      "origin_pointer": "#/components/schemas/Order/properties~1status/enum",
-      "candidate_pointer": "#/components/schemas/Order/properties~1status/enum",
+      "origin_pointer": "#/components/schemas/Order/properties/status/enum",
+      "candidate_pointer": "#/components/schemas/Order/properties/status/enum",
       "before": [
         "pending",
         "processing",
@@ -143,15 +203,20 @@
       ]
     },
     {
-      "id": "finding-sc-04-request-components-schemas-createorder-paymentmethod",
+      "id": "finding-sc-04-request-components-schemas-createorder-paymentmethod-de3e3ec7e25bc7f8",
       "rule_id": "SC-04",
       "classification": "breaking",
       "context": "request",
       "origin_pointer": "#/components/schemas/CreateOrder/required",
       "candidate_pointer": "#/components/schemas/CreateOrder/required",
-      "before": false,
+      "before": [
+        "items"
+      ],
       "before_presence": "present",
-      "after": true,
+      "after": [
+        "items",
+        "paymentMethod"
+      ],
       "after_presence": "present",
       "explanation": "Request property 'paymentMethod' was made required or added as required.",
       "policy_rule": "Add required property / optional to required",
@@ -160,15 +225,24 @@
       ]
     },
     {
-      "id": "finding-sc-05-response-components-schemas-order-trackingnumber",
+      "id": "finding-sc-05-response-components-schemas-order-trackingnumber-bd42dc3f19332189",
       "rule_id": "SC-05",
       "classification": "breaking",
       "context": "response",
       "origin_pointer": "#/components/schemas/Order/required",
       "candidate_pointer": "#/components/schemas/Order/required",
-      "before": true,
+      "before": [
+        "id",
+        "status",
+        "items",
+        "trackingNumber"
+      ],
       "before_presence": "present",
-      "after": false,
+      "after": [
+        "id",
+        "status",
+        "items"
+      ],
       "after_presence": "present",
       "explanation": "Response property 'trackingNumber' changed from required to optional, removing a guarantee.",
       "policy_rule": "Required to optional",
@@ -179,12 +253,12 @@
       ]
     },
     {
-      "id": "finding-sc-10-request-components-schemas-createorder-properties-1items-maxitems",
+      "id": "finding-sc-10-request-components-schemas-createorder-properties-items-maxitems-37263c8d60948a56",
       "rule_id": "SC-10",
       "classification": "breaking",
       "context": "request",
-      "origin_pointer": "#/components/schemas/CreateOrder/properties~1items/maxItems",
-      "candidate_pointer": "#/components/schemas/CreateOrder/properties~1items/maxItems",
+      "origin_pointer": "#/components/schemas/CreateOrder/properties/items/maxItems",
+      "candidate_pointer": "#/components/schemas/CreateOrder/properties/items/maxItems",
       "before": 100,
       "before_presence": "present",
       "after": 50,
@@ -194,12 +268,42 @@
       "affected_operations": [
         "POST /orders"
       ]
+    },
+    {
+      "id": "finding-un-01-paths--1orders-1_orderid_-1cancel-parameters-a3d6b122dbf444fe",
+      "rule_id": "UN-01",
+      "classification": "review_required",
+      "context": "operation",
+      "origin_pointer": null,
+      "candidate_pointer": "#/paths/~1orders~1{orderId}~1cancel/parameters",
+      "before": null,
+      "before_presence": "absent",
+      "after": [
+        {
+          "name": "orderId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "after_presence": "present",
+      "explanation": "This edit is not fully classified by the implemented rules; review its exact evidence.",
+      "policy_rule": "Changed unsupported semantic construct",
+      "affected_operations": [
+        "DELETE /orders/{orderId}",
+        "GET /orders",
+        "GET /orders/{orderId}",
+        "POST /orders",
+        "POST /orders/{orderId}/cancel"
+      ]
     }
   ],
   "coverage_gaps": [
     {
-      "id": "gap-oneof-components-schemas-order-properties-1discount",
-      "pointer": "#/components/schemas/Order/properties~1discount",
+      "id": "gap-oneof-components-schemas-order-properties-discount-a0375db82ca0fb83",
+      "pointer": "#/components/schemas/Order/properties/discount",
       "construct": "oneOf",
       "reason": "Schema composition construct 'oneOf' is unsupported by policy v1.",
       "affected_operations": [
