@@ -50,7 +50,13 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (result) setSelectedFindingId(result.findings.find((f) => f.id === hash)?.id || null);
+      if (!hash) setSelectedFindingId(null);
+      else {
+        const finding = result?.findings.find((f) => f.id === hash);
+        // A new comparison can update the hash before the previous result's
+        // listener has been replaced. Do not discard its newly selected ID.
+        if (finding) setSelectedFindingId(finding.id);
+      }
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);

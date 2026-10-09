@@ -4,20 +4,20 @@ Codex took over deployment following Ayotomiwa's authorization. The original Ant
 
 ## Completed checks and corrections
 
-- Initial 30-test baseline reproduced. Expanded backend suite: 74 tests passed in the latest completed run, including 26 directional schema scenarios, unchanged controls, recursive refs, dangling unused refs, nonfinite values, unknown constraints, exact escaped pointers, stable-ID collisions, canonical enum ordering, public throttling, input types, kill switch and deadline failure.
+- Initial 30-test baseline reproduced. Expanded backend suite: 76 tests pass in GitHub CI for commit 3a6e70a, including 26 directional schema scenarios, inherited and reordered parameter evidence, unchanged controls, recursive refs, dangling unused refs, nonfinite values, unknown constraints, exact escaped pointers, stable-ID collisions, canonical enum ordering, public throttling, input types, kill switch and deadline failure.
 - Production frontend TypeScript/Vite build passed after fixing API-origin configuration, escaped sample HTML export, backend regeneration of live HTML exports, dirty-input marking, upload keyboard access, responsive dialog columns, modal focus handling and read-only graph refresh when the result/selection changes.
 - Parser rejects non-JSON scalars and checks all reference targets. YAML dates remain strings. Graph traversal has visited sets and node/edge limits; comparison work has a deadline and findings budget.
 - Exact before/after values now come from source pointers. Unclassified edits remain review-required; metadata edits remain visible. The regenerated fictional sample has 5 breaking, 3 review-required and 3 non-breaking findings, 5 operations and 1 coverage gap. Three operations depend on the unsupported discount composition, so only 2 operations are fully covered.
 - No tracked environment secret files found; targeted credential-pattern scan of 104 historical blobs and tracked working files found no matches. This is a bounded scan, not a universal guarantee.
 - `pip check` passed; npm production dependency audit found zero vulnerabilities. GitHub CI passed for public release commit `b8ad936af3193a0c0a2ad8c638621d67ea3ebffa`.
-- Local frontend and API health returned HTTP 200. Browser accessibility tree displayed the sample, graph and exact inspector evidence. Browser interaction commands repeatedly timed out; responsive screenshots, interactive end-to-end and screen-reader checks remain unverified, not passed.
+- Local frontend and API health returned HTTP 200. After initial browser connection failures, interactive checks succeeded: unchanged local comparison, hosted removed-operation comparison, empty-input validation, dialog initial focus, Shift+Tab containment, Escape focus restoration, and 360px/1440px visual checks. A mobile file-input overflow was fixed and verified deployed. These checks do not establish screen-reader or full accessibility conformance.
+- Public studio: https://specshift.pages.dev/ . Direct Pages deployment, static assets only. Production sample and CSP/nosniff headers verified over HTTPS. API CORS permits that origin. Render Free API is live at https://specshift-api.onrender.com; PUBLIC_COMPARE_ENABLED=true. Fictional order comparison returned the expected 11 findings and one gap; HTML export returned 200, included evidence and contained no script.
 
 ## Pending gates
 
 - Verify CI again for subsequent release changes.
-- Browser interaction/responsive QA and all-rule reverse/nested/shared-context coverage beyond the current suite.
-- Public deployment and production smoke checks. Cloudflare CLI still reports an expired token after the user's sign-in; verify the correct CLI configuration scope before asking the user to repeat sign-in.
-- Render Free service `specshift-api` was provisioned on 9 October 2026 at `https://specshift-api.onrender.com`. Deployment of b8ad936 is live; production `/api/health/` returned 200 and `/api/compare/` returned the expected 503. `PUBLIC_COMPARE_ENABLED=false` keeps live comparisons disabled while release gates remain open.
+- Broader all-rule reverse/nested/shared-context conformance and screen-reader testing remain incomplete. This is a preview release, not a certification of exhaustive OpenAPI compatibility or accessibility.
+- Verify the final finding-selection follow-up in production and CI.
 - Provider billing/usage check: explicit Free resource selection is necessary but does not prove the account has no overage billing risk. Existing Render free services share the 750-hour workspace allowance.
 
 ## Operational controls

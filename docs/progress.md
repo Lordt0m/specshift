@@ -2,6 +2,8 @@
 
 Deployment takeover: 9 October 2026. See `release-verification.md` for the current independently checked results and unresolved gates. Phase PASS labels below are retained as historical Antigravity assertions and are not a current release certification.
 
+Current milestone: preview studio published at https://specshift.pages.dev/ and API at https://specshift-api.onrender.com on the authorized free resources. Production comparison/report/CORS/security-header checks pass. CI passes for 3a6e70a with 76 tests; full policy conformance and screen-reader testing remain open. Portfolio case study is drafted only.
+
 ## Project Baseline
 - **Date**: 9 October 2026
 - **Developer**: Ayotomiwa Ojo (via Antigravity / Ponytail mode)

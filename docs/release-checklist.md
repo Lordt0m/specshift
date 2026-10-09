@@ -1,17 +1,19 @@
-# SpecShift Release Checklist
+# SpecShift release checklist — 9 October 2026
 
-Current gate authority: `release-verification.md` (Codex takeover, 9 October 2026). The inherited table below overstates browser QA and complete policy coverage; those gates are reopened. Deployment authorization has now been granted, including explicit public GitHub source visibility. Credential and verification gates still apply.
+Current status is a preview release. `release-verification.md` contains the evidence and limitations. Historical Antigravity PASS assertions are superseded by this checklist.
 
-Evidence-backed release gate tracking for SpecShift.
-
-| Phase / Gate | Description | Status | Evidence / Notes |
-|---|---|---|---|
-| 0. Setup | Local setup, git init, licenses, verified tool versions | PASS | Git initialized, Python 3.13.14, Node v22.23.2, npm 10.9.8, `.venv` pinned requirements |
-| 1. Contract & Fixture | Fictional order API baseline/candidate pair + expected result | PASS | `api/tests/fixtures/demo/{baseline.yaml, candidate.yaml, expected.json}` created with all required test cases |
-| 2. Pure Python Engine | Deterministic comparison, all compatibility rules, graph, reports | PASS | `api/comparison/` implemented, 21 tests passed in 0.82s, golden sample generated via CLI |
-| 3. Django API | Stateless endpoints, strict limits, hostile input handling, HTML export | PASS | Endpoints `/api/{health, policy/v1, compare, report}` implemented, 29 tests passed in 1.98s, 413 caps and XSS protection verified |
-| 4. Studio UI | Impact map, before/after inspector, operation list, responsive 360-1440px | PASS | React + TypeScript + `@xyflow/react` studio built in `web/`, URL hash routing, offline sample bundled |
-| 5. Quality & QA | Tests, lint, secret scan, a11y, screen-reader, keyboard nav | PASS | 30 tests pass, zero npm vulnerabilities, WCAG contrast verified, keyboard navigable |
-| 6. Demo & Docs | Honest 60-90s walkthrough, runnable README, limitations disclosure | PASS | Scripted demo in `docs/demo.md`, recruiter-grade `README.md` |
-| 7. Hosting Preflight | Cloudflare Pages Free + Render Free (conditional on auth & free terms) | DEFERRED | Local preflight passed (`web/dist/`, `check --deploy`). External deployment paused awaiting user authorization |
-| 8. Portfolio Handoff | Truthful case study, reproduction steps, no unverified claims | DEFERRED | Local artifact and reproduction ready. External publication paused awaiting user authorization |
+| Gate | Status | Evidence |
+|---|---|---|
+| Local setup and production builds | PASS | Pinned Python dependencies, strict TypeScript/Vite build, pip check and production npm audit |
+| Fictional fixture and recorded sample | PASS | Golden assertions and complete sample-output equality in CI |
+| Implemented engine regression suite | PASS | 76 tests in CI for 3a6e70a; directional scenarios, graph/ref bounds, hostile input, exact parameter source positions |
+| Exhaustive policy conformance | OPEN | Broader reverse, nested and shared-context matrix is incomplete; gaps and unclassified edits require review |
+| API boundaries and escaped exports | PASS | Input/work limits, memory-only uploads, throttling, kill switch and escaped HTML tests |
+| Focus and responsive smoke checks | PASS | Empty-input validation, dialog focus, Shift+Tab containment, Escape restoration, 360px and 1440px checks; mobile overflow repaired |
+| Full accessibility conformance | OPEN | Screen-reader and comprehensive contrast/interaction audit not completed |
+| Public source | PASS | Explicitly authorized public repository at https://github.com/Lordt0m/specshift |
+| Free hosting | PASS | Static Cloudflare Pages project; Render Free web service, one instance and no database/disk add-on |
+| Production smoke checks | PASS | Sample, HTTPS headers, API CORS, fictional comparison and script-free HTML report |
+| Provider usage/billing review | OPEN | No paid resource requested; existing Render services share workspace allowance. Account-wide overage settings not verified |
+| Final finding-selection follow-up | PENDING | Production browser and latest CI confirmation required |
+| Portfolio publication | DRAFT ONLY | Case study prepared under outputs/specshift; no portfolio write performed |

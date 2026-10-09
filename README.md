@@ -79,7 +79,7 @@ Open `http://localhost:5173` in your browser. The studio will render with the sy
 ## Running Tests & Verifications
 
 ```bash
-# Run backend test suite (74 automated tests at the current release checkpoint)
+# Run backend test suite (76 automated tests at the current release checkpoint)
 pytest api/tests
 
 # Regenerate sample fixture from engine CLI
@@ -98,7 +98,7 @@ npm run build
 - **Out of Scope (v1):** OpenAPI 2.0 (Swagger) and OpenAPI 3.1+; external `$ref` fetching; arbitrary graph editing; user accounts; persistent storage.
 - **Reachability Notice:** A dependency graph shows contract reachability; reachability indicates where consumers *may* be affected, not proof that a specific runtime client fails.
 - **Conservative boundaries:** Non-schema referenced contract objects, readOnly/writeOnly properties, implicit schema types and unknown schema constraints produce coverage gaps. Unclassified semantic edits require review. The parser checks bounded structure and references; it is not an exhaustive OpenAPI validator.
-- **Release status:** See `docs/release-verification.md` for verified checks and outstanding gates. The initial Render preview keeps live comparisons disabled until those gates close.
+- **Preview release:** https://specshift.pages.dev/ with a stateless API on Render Free. See `docs/release-verification.md` for verified checks and outstanding conformance/accessibility work. The free API can take about a minute to wake; unsupported or unclassified constructs still require human review.
 
 ---
 
