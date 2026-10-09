@@ -50,12 +50,23 @@
 ---
 
 ## Phase 3: Expose the Django API safely
-- **Status**: In progress
+- **Status**: PASSED
+- **Gate Evidence**:
+  - Stateless Django REST Framework application configured in `api/config/` (`settings.py`, `urls.py`, `wsgi.py`, `manage.py`).
+  - No database required or configured.
+  - Endpoints exposed:
+    - `GET /api/health/`
+    - `GET /api/policy/v1/`
+    - `POST /api/compare/` (JSON and multipart file upload)
+    - `POST /api/report/` (in-memory rerun producing self-contained HTML download)
+  - Enforced strict limits: 1 MiB document size cap, 2 MiB request body cap (returning 413), nesting depth 64, external reference rejection, duplicate key checks.
+  - Hostile input testing: verified safe escaping of XSS strings in HTML report without JavaScript execution.
+  - 29 automated tests passing via `pytest api/tests` in 1.98s.
 
 ---
 
 ## Phase 4: Build the studio UI
-- **Status**: Pending
+- **Status**: In progress
 
 ---
 
