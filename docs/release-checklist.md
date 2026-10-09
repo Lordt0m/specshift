@@ -10,6 +10,6 @@ Evidence-backed release gate tracking for SpecShift.
 | 3. Django API | Stateless endpoints, strict limits, hostile input handling, HTML export | PASS | Endpoints `/api/{health, policy/v1, compare, report}` implemented, 29 tests passed in 1.98s, 413 caps and XSS protection verified |
 | 4. Studio UI | Impact map, before/after inspector, operation list, responsive 360-1440px | PASS | React + TypeScript + `@xyflow/react` studio built in `web/`, URL hash routing, offline sample bundled |
 | 5. Quality & QA | Tests, lint, secret scan, a11y, screen-reader, keyboard nav | PASS | 30 tests pass, zero npm vulnerabilities, WCAG contrast verified, keyboard navigable |
-| 6. Demo & Docs | Honest 60-90s walkthrough, runnable README, limitations disclosure | In progress | Writing `docs/demo.md` and top-level README |
-| 7. Hosting Preflight | Cloudflare Pages Free + Render Free (conditional on auth & free terms) | Pending | Awaiting user authorization for remote resources |
-| 8. Portfolio Handoff | Truthful case study, reproduction steps, no unverified claims | Pending | Awaiting user authorization |
+| 6. Demo & Docs | Honest 60-90s walkthrough, runnable README, limitations disclosure | PASS | Scripted demo in `docs/demo.md`, recruiter-grade `README.md` |
+| 7. Hosting Preflight | Cloudflare Pages Free + Render Free (conditional on auth & free terms) | DEFERRED | Local preflight passed (`web/dist/`, `check --deploy`). External deployment paused awaiting user authorization |
+| 8. Portfolio Handoff | Truthful case study, reproduction steps, no unverified claims | DEFERRED | Local artifact and reproduction ready. External publication paused awaiting user authorization |

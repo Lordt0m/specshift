@@ -93,14 +93,22 @@
 ---
 
 ## Phase 6: Recruiter-grade demo & documentation
-- **Status**: In progress
+- **Status**: PASSED
+- **Gate Evidence**:
+  - Created `docs/demo.md`: honest 60–90 second scripted walkthrough explaining directionality, shared-schema aggregation, explicit uncertainty, and local replay.
+  - Updated `README.md` with full architecture, local run instructions, testing commands, security boundary, and limitations.
 
 ---
 
 ## Phase 7: Deployment preflight & execution
-- **Status**: Pending (requires human authorization for remote actions)
+- **Status**: Prepared / Awaiting human authorization
+- **Preflight Evidence**:
+  - Production build artifact verified (`web/dist/`).
+  - Django deployment configuration check passed (`python manage.py check --deploy`).
+  - Render and Cloudflare configurations documented in `hosting-and-operations.md`.
+  - External account creation, remote git pushes, and cloud provider resources paused pending user authorization.
 
 ---
 
 ## Phase 8: Portfolio case study & handoff
-- **Status**: Pending (requires human authorization)
+- **Status**: Prepared / Awaiting human authorization
