@@ -35,7 +35,8 @@ export const App: React.FC = () => {
         setResult(data);
         setIsSample(true);
         // Default select the shared schema breaking finding (SC-03)
-        const defaultFinding = data.findings.find((f) => f.rule_id === 'SC-03') || data.findings[0];
+        const linkedFinding = data.findings.find((f) => f.id === window.location.hash.slice(1));
+        const defaultFinding = linkedFinding || data.findings.find((f) => f.rule_id === 'SC-03') || data.findings[0];
         if (defaultFinding) {
           setSelectedFindingId(defaultFinding.id);
         }
@@ -49,12 +50,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash && result) {
-        const found = result.findings.find((f) => f.id === hash);
-        if (found) {
-          setSelectedFindingId(found.id);
-        }
-      }
+      if (result) setSelectedFindingId(result.findings.find((f) => f.id === hash)?.id || null);
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
@@ -67,7 +63,7 @@ export const App: React.FC = () => {
 
   const handleClearSelection = useCallback(() => {
     setSelectedFindingId(null);
-    history.replaceState(null, '', ' ');
+    history.replaceState(null, '', window.location.pathname + window.location.search);
   }, []);
 
   const handleSelectOperation = useCallback(

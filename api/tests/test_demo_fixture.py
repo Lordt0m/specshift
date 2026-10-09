@@ -15,9 +15,11 @@ def test_demo_fixture_golden_run():
     candidate_path = FIXTURES_DIR / "candidate.yaml"
 
     result = compare_specifications(baseline_path.read_bytes(), candidate_path.read_bytes())
+    expected = json.loads((FIXTURES_DIR / "expected.json").read_text(encoding="utf-8"))
 
     # Summary checks
     summary = result["summary"]
+    assert summary == expected["summary"]
     assert summary["breaking_count"] == 5
     # Metadata edits and the newly introduced path-level parameter are now
     # visible instead of being silently discarded by the old implementation.
@@ -31,11 +33,13 @@ def test_demo_fixture_golden_run():
     rule_ids = {f["rule_id"] for f in result["findings"]}
     expected_rule_ids = {"OP-01", "OP-02", "MT-01", "MT-02", "RS-02", "SC-03", "SC-04", "SC-05", "SC-10", "UN-01"}
     assert rule_ids == expected_rule_ids
+    assert rule_ids == set(expected["rule_ids"])
 
     # Verify multi-operation aggregation for shared schema
     sc03_finding = next(f for f in result["findings"] if f["rule_id"] == "SC-03")
     assert "GET /orders" in sc03_finding["affected_operations"]
     assert "GET /orders/{orderId}" in sc03_finding["affected_operations"]
+    assert sc03_finding["affected_operations"] == expected["shared_response_operations"]
 
     sc05_finding = next(f for f in result["findings"] if f["rule_id"] == "SC-05")
     assert "GET /orders" in sc05_finding["affected_operations"]
@@ -44,7 +48,7 @@ def test_demo_fixture_golden_run():
     # Verify coverage gap
     assert len(result["coverage_gaps"]) == 1
     gap = result["coverage_gaps"][0]
-    assert gap["construct"] == "oneOf"
+    assert gap["construct"] == expected["coverage_construct"]
 
 
 def test_determinism_repeated_runs():
