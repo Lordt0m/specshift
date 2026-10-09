@@ -66,12 +66,21 @@
 ---
 
 ## Phase 4: Build the studio UI
-- **Status**: In progress
+- **Status**: PASSED
+- **Gate Evidence**:
+  - Built React 19 + TypeScript + Vite studio in `web/` using `@xyflow/react`.
+  - Impact Map displays deterministic tiered graph with origin and affected-operation reachability highlights.
+  - Inspector displays exact before/after evidence distinguishing `[present]`, `[absent]`, and `[null]` states with source pointers.
+  - Keyboard-accessible findings list with filtering by classification.
+  - Synchronized selection via browser URL hash (`#finding-...`).
+  - Input modal supports file upload or pasting, input swapping, and privacy notices.
+  - Bundled sample in `web/public/sample/result.json` loads without backend connectivity.
+  - Production build `npm run build` succeeds cleanly.
 
 ---
 
 ## Phase 5: Quality, accessibility and tests
-- **Status**: Pending
+- **Status**: In progress
 
 ---
 

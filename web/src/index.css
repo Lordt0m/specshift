@@ -1,0 +1,121 @@
+:root {
+  --canvas: #F7F8F7;
+  --surface: #FFFFFF;
+  --ink: #17212B;
+  --secondary: #53616B;
+  --border: #C8D0D0;
+  --border-light: #E2E7E7;
+  
+  --breaking: #B63F37;
+  --breaking-bg: #FBEBEA;
+  --breaking-border: #F3C4C1;
+
+  --review: #8B671A;
+  --review-bg: #FEF8EC;
+  --review-border: #F7E4B8;
+
+  --non-breaking: #236C61;
+  --non-breaking-bg: #EAF5F3;
+  --non-breaking-border: #BCDCD6;
+
+  --highlight: #2A609E;
+  --highlight-bg: #EEF4FC;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--canvas);
+  color: var(--ink);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 2px;
+}
+
+/* Badge styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.badge-breaking {
+  background: var(--breaking-bg);
+  color: var(--breaking);
+  border: 1px solid var(--breaking-border);
+}
+
+.badge-review_required {
+  background: var(--review-bg);
+  color: var(--review);
+  border: 1px solid var(--review-border);
+}
+
+.badge-non_breaking {
+  background: var(--non-breaking-bg);
+  color: var(--non-breaking);
+  border: 1px solid var(--non-breaking-border);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Layout container */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  min-height: calc(100vh - 65px);
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .app-main {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
