@@ -15,5 +15,5 @@ Current status is a preview release. `release-verification.md` contains the evid
 | Free hosting | PASS | Static Cloudflare Pages project; Render Free web service, one instance and no database/disk add-on |
 | Production smoke checks | PASS | Sample, HTTPS headers, API CORS, fictional comparison and script-free HTML report |
 | Provider usage/billing review | OPEN | No paid resource requested; existing Render services share workspace allowance. Account-wide overage settings not verified |
-| Final finding-selection follow-up | PENDING | Production browser and latest CI confirmation required |
+| Final finding-selection follow-up | PASS | d432e7e CI passed; hosted removed-operation comparison keeps its finding selected and displays exact evidence |
 | Portfolio publication | DRAFT ONLY | Case study prepared under outputs/specshift; no portfolio write performed |

@@ -15,9 +15,9 @@ Codex took over deployment following Ayotomiwa's authorization. The original Ant
 
 ## Pending gates
 
-- Verify CI again for subsequent release changes.
+- Final application commit d432e7e passed CI and is live on Pages/Render. Hosted removed-operation comparison retained automatic selection and exact evidence after the selection fix.
 - Broader all-rule reverse/nested/shared-context conformance and screen-reader testing remain incomplete. This is a preview release, not a certification of exhaustive OpenAPI compatibility or accessibility.
-- Verify the final finding-selection follow-up in production and CI.
+- The report API returned valid escaped HTML, but browser automation timed out waiting for the downloaded file and showed no visible error. File-download capture is unverified.
 - Provider billing/usage check: explicit Free resource selection is necessary but does not prove the account has no overage billing risk. Existing Render free services share the 750-hour workspace allowance.
 
 ## Operational controls
