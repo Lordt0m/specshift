@@ -37,12 +37,20 @@
 ---
 
 ## Phase 2: Build the pure Python comparison engine
-- **Status**: In progress
+- **Status**: PASSED
+- **Gate Evidence**:
+  - Pure Python engine implemented in `api/comparison/` (`rules.py`, `parse.py`, `normalize.py`, `graph.py`, `engine.py`, `report.py`, `cli.py`).
+  - Rule registry implements all rules from `compatibility-rules.md`.
+  - Safe parsing enforces limits: 1 MiB doc cap, depth 64, duplicate key rejection, YAML alias/anchor rejection, OpenAPI 3.0.0-3.0.3 allowlist, internal `#/...` pointer safety (external refs rejected).
+  - 21 automated tests passing via `pytest api/tests` in 0.82s.
+  - Determinism across repeated runs verified (`test_determinism_repeated_runs`).
+  - Key-order and whitespace invariance verified (`test_key_order_and_whitespace_invariance`).
+  - Generated `web/public/sample/result.json` via CLI from golden fixtures without manual hand-edits.
 
 ---
 
 ## Phase 3: Expose the Django API safely
-- **Status**: Pending
+- **Status**: In progress
 
 ---
 
