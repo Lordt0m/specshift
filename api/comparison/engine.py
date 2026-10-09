@@ -450,17 +450,20 @@ class ComparisonEngine:
 
                 # Resolve effective parameters (operation params override path params)
                 eff_params: dict[tuple[str, str], dict[str, Any]] = {}
-                for p in path_params:
+                param_pointers: dict[tuple[str, str], str] = {}
+                for index, p in enumerate(path_params):
                     if isinstance(p, dict) and "name" in p and "in" in p:
                         key = (p["in"], p["name"].lower() if p["in"] == "header" else p["name"])
                         eff_params[key] = p
+                        param_pointers[key] = append_pointer(append_pointer(path_pointer, "parameters"), index)
                 
                 op_params = op_data.get("parameters", [])
                 if isinstance(op_params, list):
-                    for p in op_params:
+                    for index, p in enumerate(op_params):
                         if isinstance(p, dict) and "name" in p and "in" in p:
                             key = (p["in"], p["name"].lower() if p["in"] == "header" else p["name"])
                             eff_params[key] = p
+                            param_pointers[key] = append_pointer(append_pointer(op_pointer, "parameters"), index)
 
                 ops[(method_upper, path)] = {
                     "method": method_upper,
@@ -468,6 +471,7 @@ class ComparisonEngine:
                     "pointer": op_pointer,
                     "data": op_data,
                     "parameters": eff_params,
+                    "parameter_pointers": param_pointers,
                 }
         return ops
 
@@ -510,6 +514,8 @@ class ComparisonEngine:
             bp = base_params.get(p_key)
             cp = cand_params.get(p_key)
             p_in, p_name = p_key
+            bp_pointer = base_op["parameter_pointers"].get(p_key)
+            cp_pointer = cand_op["parameter_pointers"].get(p_key)
 
             if bp is not None and cp is None:
                 # PA-03: Remove parameter
@@ -521,9 +527,9 @@ class ComparisonEngine:
                         rule_id=rule.id,
                         classification=rule.request_classification,
                         context="request",
-                        origin_pointer=base_op["pointer"],
-                        candidate_pointer=cand_op["pointer"],
-                        before=bp.get("name", p_name),
+                        origin_pointer=bp_pointer,
+                        candidate_pointer=None,
+                        before=bp,
                         before_presence="present",
                         after=None,
                         after_presence="absent",
@@ -545,10 +551,10 @@ class ComparisonEngine:
                             classification=rule.request_classification,
                             context="request",
                             origin_pointer=None,
-                            candidate_pointer=cand_op["pointer"],
+                            candidate_pointer=cp_pointer,
                             before=None,
                             before_presence="absent",
-                            after=cp.get("name", p_name),
+                            after=cp,
                             after_presence="present",
                             explanation=f"Required parameter '{p_name}' in {p_in} was added.",
                             policy_rule=rule.title,
@@ -566,10 +572,10 @@ class ComparisonEngine:
                             classification=rule.request_classification,
                             context="request",
                             origin_pointer=None,
-                            candidate_pointer=cand_op["pointer"],
+                            candidate_pointer=cp_pointer,
                             before=None,
                             before_presence="absent",
-                            after=cp.get("name", p_name),
+                            after=cp,
                             after_presence="present",
                             explanation=f"Optional parameter '{p_name}' in {p_in} was added.",
                             policy_rule=rule.title,
@@ -590,8 +596,8 @@ class ComparisonEngine:
                             rule_id=rule.id,
                             classification=rule.request_classification,
                             context="request",
-                            origin_pointer=base_op["pointer"],
-                            candidate_pointer=cand_op["pointer"],
+                            origin_pointer=append_pointer(bp_pointer, "required"),
+                            candidate_pointer=append_pointer(cp_pointer, "required"),
                             before=False,
                             before_presence="present",
                             after=True,
@@ -611,8 +617,8 @@ class ComparisonEngine:
                             rule_id=rule.id,
                             classification=rule.request_classification,
                             context="request",
-                            origin_pointer=base_op["pointer"],
-                            candidate_pointer=cand_op["pointer"],
+                            origin_pointer=append_pointer(bp_pointer, "required"),
+                            candidate_pointer=append_pointer(cp_pointer, "required"),
                             before=True,
                             before_presence="present",
                             after=False,
@@ -630,8 +636,8 @@ class ComparisonEngine:
                     self._compare_schemas(
                         b_schema,
                         c_schema,
-                        append_pointer(base_op["pointer"], f"parameters/{p_name}/schema"),
-                        append_pointer(cand_op["pointer"], f"parameters/{p_name}/schema"),
+                        append_pointer(bp_pointer, "schema"),
+                        append_pointer(cp_pointer, "schema"),
                         context="request",
                         fallback_affected_ops=[op_label],
                     )

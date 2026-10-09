@@ -167,8 +167,8 @@ export const InputModal: React.FC<InputModalProps> = ({
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
               {/* Baseline Column */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <div style={{minWidth: 0}}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                   <label htmlFor="baseline-input" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
                     Baseline (current contract)
                   </label>
@@ -178,6 +178,7 @@ export const InputModal: React.FC<InputModalProps> = ({
                       color: 'var(--highlight)',
                       cursor: 'pointer',
                       textDecoration: 'underline',
+                      maxWidth: '100%',
                     }}
                   >
                     Upload file
@@ -185,6 +186,7 @@ export const InputModal: React.FC<InputModalProps> = ({
                       type="file"
                       accept=".json,.yaml,.yml"
                       aria-label="Upload baseline file"
+                      style={{display: 'block', width: '100%', maxWidth: '100%'}}
                       onChange={(e) => handleFileUpload(e, setBaselineText, 'Baseline')}
                     />
                   </label>
@@ -209,8 +211,8 @@ export const InputModal: React.FC<InputModalProps> = ({
               </div>
 
               {/* Candidate Column */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <div style={{minWidth: 0}}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                   <label htmlFor="candidate-input" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
                     Candidate (proposed contract)
                   </label>
@@ -220,6 +222,7 @@ export const InputModal: React.FC<InputModalProps> = ({
                       color: 'var(--highlight)',
                       cursor: 'pointer',
                       textDecoration: 'underline',
+                      maxWidth: '100%',
                     }}
                   >
                     Upload file
@@ -227,6 +230,7 @@ export const InputModal: React.FC<InputModalProps> = ({
                       type="file"
                       accept=".json,.yaml,.yml"
                       aria-label="Upload candidate file"
+                      style={{display: 'block', width: '100%', maxWidth: '100%'}}
                       onChange={(e) => handleFileUpload(e, setCandidateText, 'Candidate')}
                     />
                   </label>

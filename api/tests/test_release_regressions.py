@@ -18,6 +18,26 @@ def compare(a, b):
     return compare_specifications(json.dumps(a), json.dumps(b))
 
 
+@pytest.mark.parametrize("inherited", [False, True])
+def test_parameter_bound_evidence_tracks_array_positions(inherited):
+    from copy import deepcopy
+    base = document()
+    parameter = {"name": "filter/~", "in": "query", "schema": {"type": "string", "maxLength": 10}}
+    owner = base["paths"]["/test"] if inherited else base["paths"]["/test"]["get"]
+    owner["parameters"] = [parameter]
+    candidate = deepcopy(base)
+    candidate_owner = candidate["paths"]["/test"] if inherited else candidate["paths"]["/test"]["get"]
+    candidate_owner["parameters"].insert(0, {"name": "other", "in": "query", "schema": {"type": "string"}})
+    candidate_owner["parameters"][1]["schema"]["maxLength"] = 5
+    finding = next(f for f in compare(base, candidate)["findings"] if f["rule_id"] == "SC-10")
+    prefix = "#/paths/~1test" + ("" if inherited else "/get")
+    assert finding["origin_pointer"] == prefix + "/parameters/0/schema/maxLength"
+    assert finding["candidate_pointer"] == prefix + "/parameters/1/schema/maxLength"
+    assert finding["before"] == 10 and finding["after"] == 5
+    assert resolve_pointer(base, finding["origin_pointer"]) == finding["before"]
+    assert resolve_pointer(candidate, finding["candidate_pointer"]) == finding["after"]
+
+
 @pytest.fixture(autouse=True)
 def clean_rate_buckets():
     from api.middleware import _buckets
