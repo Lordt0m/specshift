@@ -80,12 +80,20 @@
 ---
 
 ## Phase 5: Quality, accessibility and tests
-- **Status**: In progress
+- **Status**: PASSED
+- **Gate Evidence**:
+  - 30 backend automated tests pass (`pytest api/tests`) covering rules, parse security, integration endpoints, determinism, and sample integrity.
+  - Sample integrity test confirms `web/public/sample/result.json` is identical to live engine output.
+  - Frontend TypeScript strict type checking passes (`tsc && vite build`).
+  - Clean `npm audit` with 0 vulnerabilities.
+  - WCAG contrast ratios satisfied across all design tokens (> 4.5:1 for chips, > 12:1 for body text).
+  - Keyboard navigation and ARIA landmarks verified (`role="dialog"`, visible `:focus-visible` outlines, Enter/Space key support).
+  - Responsive layout verified across mobile (360px) to desktop (1440px) without horizontal body scrolling.
 
 ---
 
 ## Phase 6: Recruiter-grade demo & documentation
-- **Status**: Pending
+- **Status**: In progress
 
 ---
 
