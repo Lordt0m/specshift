@@ -23,6 +23,7 @@ export const App: React.FC = () => {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [lastInputs, setLastInputs] = useState<{baseline: string; candidate: string} | null>(null);
   const [reportError, setReportError] = useState<string | null>(null);
+  const [completionMessage, setCompletionMessage] = useState('');
 
   // Load bundled recorded sample on mount
   useEffect(() => {
@@ -75,7 +76,8 @@ export const App: React.FC = () => {
   const handleSelectOperation = useCallback(
     (opLabel: string) => {
       if (!result) return;
-      const matchingFinding = result.findings.find((f) => f.affected_operations.includes(opLabel));
+      const matching = result.findings.filter((f) => f.affected_operations.includes(opLabel));
+      const matchingFinding = matching.find((f) => f.context !== 'metadata') || matching[0];
       if (matchingFinding) {
         handleSelectFinding(matchingFinding);
       }
@@ -86,6 +88,7 @@ export const App: React.FC = () => {
   const handleCompare = async (baseline: string, candidate: string) => {
     setIsComparing(true);
     setCompareError(null);
+    setCompletionMessage('');
     try {
       const response = await fetch(`${API_BASE}/api/compare/`, {
         signal: AbortSignal.timeout(90000),
@@ -111,6 +114,7 @@ export const App: React.FC = () => {
       setLastInputs({baseline, candidate});
       setIsSample(false);
       setIsStale(false);
+      setCompletionMessage(`Comparison complete. ${data.summary.conclusion}. ${data.summary.total_findings} findings; ${data.summary.coverage_gap_count} coverage gaps.`);
       if (data.findings.length > 0) {
         handleSelectFinding(data.findings[0]);
       } else {
@@ -167,6 +171,12 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
+      <p role="status" style={{padding: '0.4rem 1.5rem'}}>{isComparing ? 'Comparing. The free API may take about a minute to wake.' : reportError || (isStale ? 'Showing the previous comparison. Run comparison to review edited inputs.' : completionMessage)}</p>
+      <div id="studio-content" inert={isInputModalOpen || isHowMadeOpen}>
+      <a className="skip-link" href="#studio-main" onClick={(event) => {
+        event.preventDefault();
+        document.getElementById('studio-main')?.focus();
+      }}>Skip to findings</a>
       <Header
         summary={result?.summary || null}
         policyVersion={result?.policy_version || 'v1'}
@@ -179,8 +189,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Studio Viewport */}
-      <p role="status" style={{padding: '0.4rem 1.5rem'}}>{isComparing ? 'Comparing. The free API may take about a minute to wake.' : reportError || (isStale ? 'Showing the previous comparison. Run comparison to review edited inputs.' : '')}</p>
-      <main className="app-main">
+      <main id="studio-main" tabIndex={-1} className="app-main" aria-busy={isComparing}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
           {/* Top: Impact Map Canvas */}
           <div style={{ flex: 1, minHeight: '380px' }}>
@@ -211,6 +220,7 @@ export const App: React.FC = () => {
           onClearSelection={handleClearSelection}
         />
       </main>
+      </div>
 
       <InputModal
         isOpen={isInputModalOpen}

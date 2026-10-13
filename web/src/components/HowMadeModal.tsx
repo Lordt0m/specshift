@@ -82,7 +82,8 @@ export const HowMadeModal: React.FC<HowMadeModalProps> = ({ isOpen, onClose }) =
 
           <p>
             <strong>Live Comparisons:</strong> When you upload or paste your own OpenAPI 3.0 contracts, they are sent to the
-            live Python/Django service for strictly in-memory analysis and are not retained.
+            live Python/Django service for in-memory analysis. The application does not intentionally retain inputs;
+            providers may keep access logs. This preview tests selected directional cases, not exhaustive OpenAPI compatibility.
           </p>
         </div>
 

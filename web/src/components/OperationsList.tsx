@@ -43,7 +43,7 @@ export const OperationsList: React.FC<OperationsListProps> = ({
         <div>
           <h2 style={{ fontSize: '1rem', fontWeight: 700 }}>Contract Findings &amp; Gaps</h2>
           <p style={{ fontSize: '0.78rem', color: 'var(--secondary)' }}>
-            Complete keyboard-accessible findings list with direct evidence links.
+            Select a finding to inspect its evidence. Preview checks do not establish full accessibility conformance.
           </p>
         </div>
 
@@ -58,6 +58,7 @@ export const OperationsList: React.FC<OperationsListProps> = ({
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
+              aria-pressed={filter === tab.id}
               style={{
                 background: filter === tab.id ? 'var(--canvas)' : 'none',
                 border: filter === tab.id ? '1px solid var(--border)' : '1px solid transparent',
@@ -107,17 +108,12 @@ export const OperationsList: React.FC<OperationsListProps> = ({
           {filteredFindings.map((f) => {
             const isSelected = f.id === selectedFindingId;
             return (
-              <div
+              <button
+                type="button"
                 key={f.id}
-                role="button"
-                tabIndex={0}
+                className="finding-button"
+                aria-pressed={isSelected}
                 onClick={() => onSelectFinding(f)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onSelectFinding(f);
-                  }
-                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -129,24 +125,26 @@ export const OperationsList: React.FC<OperationsListProps> = ({
                   cursor: 'pointer',
                   fontSize: '0.82rem',
                   gap: '1rem',
+                  textAlign: 'left',
+                  width: '100%',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
                   <span className={`badge badge-${f.classification}`} style={{ flexShrink: 0 }}>
                     {f.rule_id}
                   </span>
-                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ overflowWrap: 'anywhere' }}>
                     <span style={{ fontWeight: 600 }}>{f.explanation}</span>
-                  </div>
-                </div>
+                  </span>
+                </span>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0, fontSize: '0.75rem', color: 'var(--secondary)' }}>
+                <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: 'var(--secondary)' }}>
                   <span className="mono" style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {f.origin_pointer || '(new)'}
                   </span>
                   <span>{f.affected_operations.length} affected</span>
-                </div>
-              </div>
+                </span>
+              </button>
             );
           })}
         </div>

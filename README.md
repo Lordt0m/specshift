@@ -36,7 +36,7 @@ Rather than presenting noisy git diffs or unexplained badges, SpecShift evaluate
 
 - **Backend / Engine:** Python 3.13, Django 6.1.2 (installed implementation version), Django REST Framework, PyYAML
 - **Frontend:** React 19, TypeScript, Vite, `@xyflow/react`
-- **Testing:** Pytest, pytest-django
+- **Testing:** Pytest, pytest-django; Vitest, Testing Library and axe-core for bounded DOM/keyboard checks
 
 ---
 
@@ -79,7 +79,7 @@ Open `http://localhost:5173` in your browser. The studio will render with the sy
 ## Running Tests & Verifications
 
 ```bash
-# Run backend test suite (76 automated tests at the current release checkpoint)
+# Run backend test suite (168 tests at the 12 October local checkpoint)
 pytest api/tests
 
 # Regenerate sample fixture from engine CLI
@@ -87,6 +87,7 @@ python -m api.comparison.cli api/tests/fixtures/demo/baseline.yaml api/tests/fix
 
 # Build frontend and run TypeScript strict type check
 cd web
+npm test
 npm run build
 ```
 
@@ -99,6 +100,7 @@ npm run build
 - **Reachability Notice:** A dependency graph shows contract reachability; reachability indicates where consumers *may* be affected, not proof that a specific runtime client fails.
 - **Conservative boundaries:** Non-schema referenced contract objects, readOnly/writeOnly properties, implicit schema types and unknown schema constraints produce coverage gaps. Unclassified semantic edits require review. The parser checks bounded structure and references; it is not an exhaustive OpenAPI validator.
 - **Preview release:** https://specshift.pages.dev/ with a stateless API on Render Free. See `docs/release-verification.md` for verified checks and outstanding conformance/accessibility work. The free API can take about a minute to wake; unsupported or unclassified constructs still require human review.
+- **Local follow-up:** Engine 1.0.1 adds selected forward/reverse, nested/shared and cyclic-context regressions; it does not prove exhaustive OpenAPI compatibility. Twelve UI tests include axe checks in jsdom with contrast disabled and the map mocked. Browser keyboard and 320px checks are recorded; actual screen-reader, comprehensive contrast/zoom and full graph accessibility remain unverified. These local changes have not been deployed.
 
 ---
 

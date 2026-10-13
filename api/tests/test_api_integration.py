@@ -22,7 +22,7 @@ def test_health_endpoint(api_client):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert data["engine_version"] == "1.0.0"
+    assert data["engine_version"] == "1.0.1"
     assert data["policy_version"] == "v1"
     assert "3.0.3" in data["supported_openapi_versions"]
 

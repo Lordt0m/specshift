@@ -82,7 +82,7 @@ export const Inspector: React.FC<InspectorProps> = ({
       return <span style={{ color: 'var(--secondary)', fontStyle: 'italic' }}>&lang;null&rang;</span>;
     }
     if (typeof val === 'object' && val !== null) {
-      return <pre style={{ margin: 0, fontSize: '0.75rem', overflowX: 'auto' }}>{JSON.stringify(val, null, 2)}</pre>;
+      return <pre style={{ margin: 0, fontSize: '0.75rem', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(val, null, 2)}</pre>;
     }
     return <span>{String(val)}</span>;
   };
@@ -113,6 +113,7 @@ export const Inspector: React.FC<InspectorProps> = ({
         </div>
         <button
           onClick={onClearSelection}
+            aria-label="Clear selection"
           title="Clear selection"
           style={{
             background: 'none',
@@ -147,7 +148,7 @@ export const Inspector: React.FC<InspectorProps> = ({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
             gap: '0.75rem',
             background: 'var(--canvas)',
             padding: '0.75rem',
@@ -159,7 +160,7 @@ export const Inspector: React.FC<InspectorProps> = ({
             <div style={{ fontSize: '0.72rem', color: 'var(--secondary)', fontWeight: 600, marginBottom: '0.2rem' }}>
               Baseline [{before_presence}]
             </div>
-            <div className="mono" style={{ fontSize: '0.8rem', background: 'var(--surface)', padding: '0.4rem', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
+            <div className="mono" style={{ overflowWrap: 'anywhere', fontSize: '0.8rem', background: 'var(--surface)', padding: '0.4rem', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
               {renderValue(before, before_presence)}
             </div>
           </div>
@@ -167,7 +168,7 @@ export const Inspector: React.FC<InspectorProps> = ({
             <div style={{ fontSize: '0.72rem', color: 'var(--secondary)', fontWeight: 600, marginBottom: '0.2rem' }}>
               Candidate [{after_presence}]
             </div>
-            <div className="mono" style={{ fontSize: '0.8rem', background: 'var(--surface)', padding: '0.4rem', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
+            <div className="mono" style={{ overflowWrap: 'anywhere', fontSize: '0.8rem', background: 'var(--surface)', padding: '0.4rem', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
               {renderValue(after, after_presence)}
             </div>
           </div>

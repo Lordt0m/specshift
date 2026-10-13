@@ -82,7 +82,8 @@ export const ImpactMap: React.FC<ImpactMapProps> = ({
         position: { x: 50 + idx * 260, y: 50 },
         data: {
           label: (
-            <div
+            <button
+              type="button"
               style={{
                 padding: '0.6rem 0.8rem',
                 borderRadius: '6px',
@@ -98,21 +99,22 @@ export const ImpactMap: React.FC<ImpactMapProps> = ({
                 opacity: isDimmed ? 0.4 : 1,
                 boxShadow: isAffected ? '0 2px 8px rgba(182, 63, 55, 0.2)' : 'none',
                 cursor: 'pointer',
+                textAlign: 'left',
               }}
               onClick={() => onSelectOperation && onSelectOperation(n.label)}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem', background: 'var(--canvas)', borderRadius: '3px' }}>
                   {n.method || 'OP'}
                 </span>
                 <span className="mono" style={{ fontSize: '0.78rem' }}>{n.path || n.label}</span>
-              </div>
+              </span>
               {isAffected && (
-                <div style={{ fontSize: '0.68rem', marginTop: '0.3rem', fontWeight: 700 }}>
+                <span style={{ display: 'block', fontSize: '0.68rem', marginTop: '0.3rem', fontWeight: 700 }}>
                   &bull; Affected by finding
-                </div>
+                </span>
               )}
-            </div>
+            </button>
           ),
         },
         type: 'default',

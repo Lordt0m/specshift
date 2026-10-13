@@ -21,6 +21,12 @@ export const InputModal: React.FC<InputModalProps> = ({
   const [baselineText, setBaselineText] = useState<string>('');
   const [candidateText, setCandidateText] = useState<string>('');
   const [localError, setLocalError] = useState<string | null>(null);
+  const [invalidSide, setInvalidSide] = useState<string | null>(null);
+  const failField = (side: string, message: string) => {
+    setLocalError(message);
+    setInvalidSide(side);
+    document.getElementById(`${side}-input`)?.focus();
+  };
   useDialogFocus(isOpen, onClose);
 
   if (!isOpen) return null;
@@ -34,7 +40,7 @@ export const InputModal: React.FC<InputModalProps> = ({
     if (!file) return;
 
     if (file.size > 1024 * 1024) {
-      setLocalError(`${sideName} exceeds the 1 MiB size cap (${(file.size / 1024).toFixed(0)} KB).`);
+      failField(`${sideName.toLowerCase()}-file`, `${sideName} exceeds the 1 MiB size cap (${(file.size / 1024).toFixed(0)} KB).`);
       return;
     }
 
@@ -44,9 +50,10 @@ export const InputModal: React.FC<InputModalProps> = ({
       setter(content);
       onInputChange();
       setLocalError(null);
+      setInvalidSide(null);
     };
     reader.onerror = () => {
-      setLocalError(`Failed to read ${sideName} file.`);
+      failField(`${sideName.toLowerCase()}-file`, `Failed to read ${sideName} file.`);
     };
     reader.readAsText(file, 'utf-8');
   };
@@ -55,24 +62,28 @@ export const InputModal: React.FC<InputModalProps> = ({
     const temp = baselineText;
     setBaselineText(candidateText);
     setCandidateText(temp);
+    setLocalError(null);
+    setInvalidSide(null);
     onInputChange();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!baselineText.trim()) {
-      setLocalError('Please provide a baseline specification.');
+      failField('baseline', 'Please provide a baseline specification.');
       return;
     }
     if (!candidateText.trim()) {
-      setLocalError('Please provide a candidate specification.');
+      failField('candidate', 'Please provide a candidate specification.');
       return;
     }
-    if ([baselineText, candidateText].some((value) => new TextEncoder().encode(value).length > 1024 * 1024)) {
-      setLocalError('Each document must be at most 1 MiB in UTF-8.');
+    const oversized = [baselineText, candidateText].findIndex((value) => new TextEncoder().encode(value).length > 1024 * 1024);
+    if (oversized !== -1) {
+      failField(oversized === 0 ? 'baseline' : 'candidate', 'Each document must be at most 1 MiB in UTF-8.');
       return;
     }
     setLocalError(null);
+    setInvalidSide(null);
     try {
       await onCompare(baselineText, candidateText);
       onClose();
@@ -150,7 +161,8 @@ export const InputModal: React.FC<InputModalProps> = ({
           <div style={{ padding: '1.25rem 1.5rem', overflowY: 'auto', flex: 1 }}>
             {(localError || errorMessage) && (
               <div
-                role="alert"
+                id="input-error"
+                role={invalidSide ? undefined : 'alert'}
                 style={{
                   background: 'var(--breaking-bg)',
                   border: '1px solid var(--breaking-border)',
@@ -184,6 +196,9 @@ export const InputModal: React.FC<InputModalProps> = ({
                     Upload file
                     <input
                       type="file"
+                      id="baseline-file-input"
+                      aria-invalid={invalidSide === 'baseline-file' || undefined}
+                      aria-describedby={invalidSide === 'baseline-file' ? 'input-error' : undefined}
                       accept=".json,.yaml,.yml"
                       aria-label="Upload baseline file"
                       style={{display: 'block', width: '100%', maxWidth: '100%'}}
@@ -193,8 +208,10 @@ export const InputModal: React.FC<InputModalProps> = ({
                 </div>
                 <textarea
                   id="baseline-input"
+                  aria-invalid={invalidSide === 'baseline' || undefined}
+                  aria-describedby={invalidSide === 'baseline' ? 'input-error' : undefined}
                   value={baselineText}
-                  onChange={(e) => { setBaselineText(e.target.value); onInputChange(); }}
+                  onChange={(e) => { setBaselineText(e.target.value); setLocalError(null); setInvalidSide(null); onInputChange(); }}
                   placeholder="Paste OpenAPI 3.0 baseline specification..."
                   rows={14}
                   style={{
@@ -228,6 +245,9 @@ export const InputModal: React.FC<InputModalProps> = ({
                     Upload file
                     <input
                       type="file"
+                      id="candidate-file-input"
+                      aria-invalid={invalidSide === 'candidate-file' || undefined}
+                      aria-describedby={invalidSide === 'candidate-file' ? 'input-error' : undefined}
                       accept=".json,.yaml,.yml"
                       aria-label="Upload candidate file"
                       style={{display: 'block', width: '100%', maxWidth: '100%'}}
@@ -237,8 +257,10 @@ export const InputModal: React.FC<InputModalProps> = ({
                 </div>
                 <textarea
                   id="candidate-input"
+                  aria-invalid={invalidSide === 'candidate' || undefined}
+                  aria-describedby={invalidSide === 'candidate' ? 'input-error' : undefined}
                   value={candidateText}
-                  onChange={(e) => { setCandidateText(e.target.value); onInputChange(); }}
+                  onChange={(e) => { setCandidateText(e.target.value); setLocalError(null); setInvalidSide(null); onInputChange(); }}
                   placeholder="Paste OpenAPI 3.0 candidate specification..."
                   rows={14}
                   style={{
@@ -269,7 +291,7 @@ export const InputModal: React.FC<InputModalProps> = ({
                   color: 'var(--secondary)',
                 }}
               >
-                &rlarr; Swap Baseline and Candidate
+                Swap Baseline and Candidate
               </button>
             </div>
 

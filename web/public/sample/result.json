@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "engine_version": "1.0.0",
+  "engine_version": "1.0.1",
   "policy_version": "v1",
   "input_digests": {
     "baseline": "543feae759d7807b9d1db3e084143150cf4bab803292627cca8d5c8a79c9243f",

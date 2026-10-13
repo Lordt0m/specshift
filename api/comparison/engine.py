@@ -20,7 +20,7 @@ from .parse import parse_specification, resolve_pointer
 from .rules import RULE_REGISTRY, POLICY_VERSION, Rule
 
 SCHEMA_VERSION = "1.0.0"
-ENGINE_VERSION = "1.0.0"
+ENGINE_VERSION = "1.0.1"
 
 
 class ComparisonTimeoutError(ValueError):
@@ -97,7 +97,9 @@ class ComparisonEngine:
         self.findings_map: dict[str, Finding] = {}
         self.coverage_gaps_map: dict[str, CoverageGap] = {}
         self.warnings: list[str] = []
-        self.visited_schema_pairs: set[tuple[str, str, str]] = set()
+        self.schema_evidence: dict[tuple[str, str, str], tuple[set[str], set[str]]] = {}
+        self.schema_dependencies: dict[tuple[str, str, str], set[tuple[str, str, str]]] = {}
+        self.active_schema_pairs: list[tuple[str, str, str]] = []
         self.graph_visited: set[tuple[int, str, str]] = set()
         self.deadline = time.monotonic() + 8
 
@@ -256,6 +258,9 @@ class ComparisonEngine:
 
     def _record_finding(self, finding: Finding) -> None:
         self._check_budget()
+        finding.affected_operations = list(finding.affected_operations)
+        for pair in self.active_schema_pairs:
+            self.schema_evidence[pair][0].add(finding.id)
         # Evidence is the exact value at the pointer, not a derived boolean or
         # subset which could be mistaken for the original source fragment.
         for side, document, pointer in (("before", self.baseline, finding.origin_pointer), ("after", self.candidate, finding.candidate_pointer)):
@@ -317,6 +322,9 @@ class ComparisonEngine:
 
     def _record_gap(self, gap: CoverageGap) -> None:
         self._check_budget()
+        gap.affected_operations = list(gap.affected_operations)
+        for pair in self.active_schema_pairs:
+            self.schema_evidence[pair][1].add(gap.id)
         if gap.id in self.coverage_gaps_map:
             existing = self.coverage_gaps_map[gap.id]
             for op in gap.affected_operations:
@@ -912,7 +920,45 @@ class ComparisonEngine:
                 return sorted(ancestors)
         return sorted(fallback_ops)
 
-    def _compare_schemas(
+    def _compare_schemas(self, b_schema, c_schema, b_ptr, c_ptr, context, fallback_affected_ops):
+        self._check_budget()
+        pair = (b_schema.get('$ref') or b_ptr, c_schema.get('$ref') or c_ptr, context)
+        self.schema_dependencies.setdefault(pair, set())
+        if self.active_schema_pairs:
+            self.schema_dependencies[self.active_schema_pairs[-1]].add(pair)
+        if pair in self.schema_evidence:
+            findings, gaps = set(), set()
+            pending, visited = [pair], set()
+            while pending:
+                self._check_budget()
+                descendant = pending.pop()
+                if descendant in visited:
+                    continue
+                visited.add(descendant)
+                child_findings, child_gaps = self.schema_evidence[descendant]
+                findings.update(child_findings)
+                gaps.update(child_gaps)
+                pending.extend(self.schema_dependencies[descendant] - visited)
+            # Cache actual descendant evidence IDs, including references whose
+            # source pointers live outside the parent subtree and absent origins.
+            # Follow recorded pairs on reuse: a cycle may return before a later
+            # sibling's evidence exists, so an early flattened copy is incomplete.
+            for parent in self.active_schema_pairs:
+                self.schema_evidence[parent][0].update(findings)
+                self.schema_evidence[parent][1].update(gaps)
+            for fid in findings:
+                self.findings_map[fid].affected_operations.extend(fallback_affected_ops)
+            for gid in gaps:
+                self.coverage_gaps_map[gid].affected_operations.extend(fallback_affected_ops)
+            return
+        self.schema_evidence[pair] = (set(), set())
+        self.active_schema_pairs.append(pair)
+        try:
+            self._compare_schema_pair(b_schema, c_schema, b_ptr, c_ptr, context, fallback_affected_ops)
+        finally:
+            self.active_schema_pairs.pop()
+
+    def _compare_schema_pair(
         self,
         b_schema: dict[str, Any],
         c_schema: dict[str, Any],
@@ -928,16 +974,6 @@ class ComparisonEngine:
         eff_b_ptr = b_ref if (b_ref and isinstance(b_ref, str)) else b_ptr
         eff_c_ptr = c_ref if (c_ref and isinstance(c_ref, str)) else c_ptr
 
-        pair_key = (eff_b_ptr, eff_c_ptr, context)
-        if pair_key in self.visited_schema_pairs:
-            for finding in self.findings_map.values():
-                if finding.context == context and finding.origin_pointer and (
-                    finding.origin_pointer == eff_b_ptr or finding.origin_pointer.startswith(eff_b_ptr + "/")
-                ):
-                    finding.affected_operations.extend(fallback_affected_ops)
-            return
-        self.visited_schema_pairs.add(pair_key)
-
         # Dereference for property comparison
         resolved_b = resolve_pointer(self.baseline, b_ref) if b_ref else b_schema
         resolved_c = resolve_pointer(self.candidate, c_ref) if c_ref else c_schema
@@ -948,12 +984,6 @@ class ComparisonEngine:
         affected_ops = fallback_affected_ops
         # Contextual aggregation follows actual visits, not the union graph's
         # request/response ancestors. A shared ref may have different verdicts.
-        for finding in self.findings_map.values():
-            if finding.context == context and finding.origin_pointer and (
-                finding.origin_pointer == eff_b_ptr or finding.origin_pointer.startswith(eff_b_ptr + "/")
-            ):
-                finding.affected_operations.extend(affected_ops)
-
         # Check coverage gaps (composition: oneOf, allOf, anyOf, not, discriminator)
         supported = {"type", "properties", "required", "items", "enum", "nullable", "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems", "additionalProperties", "description", "title", "example", "default", "$ref"}
         unsupported = (set(resolved_b) | set(resolved_c)) - supported
@@ -1114,6 +1144,15 @@ class ComparisonEngine:
             b_val = resolved_b.get(bound_key)
             c_val = resolved_c.get(bound_key)
             if b_val is not None and c_val is not None and b_val != c_val:
+                allowed_types = {'number', 'integer'} if bound_key in {'minimum', 'maximum'} else (
+                    {'string'} if bound_key in {'minLength', 'maxLength'} else {'array'})
+                if b_type != c_type or b_type not in allowed_types:
+                    continue  # the unclassified-edit audit preserves uncertainty
+                if bound_key in {'minimum', 'maximum'} and any(
+                    key in schema for schema in (resolved_b, resolved_c)
+                    for key in ('exclusiveMinimum', 'exclusiveMaximum')
+                ):
+                    continue
                 is_tightened = (c_val > b_val) if higher_is_tighter else (c_val < b_val)
                 if is_tightened:
                     rule = RULE_REGISTRY["SC-10"]

@@ -47,8 +47,14 @@ button, input, textarea, select {
 }
 
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
-  outline: 2px solid var(--highlight);
   outline-offset: 2px;
+}
+
+.skip-link { position: absolute; inset-inline-start: -999px; }
+.skip-link:focus { inset-inline-start: 16px; top: 16px; z-index: 100; background: var(--surface); padding: 0.75rem; }
+[role="dialog"] { overscroll-behavior: contain; }
+@media (forced-colors: active) {
+  :focus-visible { outline: 2px solid Highlight; }
 }
 
 /* Badge styles */
@@ -103,9 +109,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 }
 
 .app-main > * { min-width: 0; }
-[role="button"]:focus-visible { outline: 2px solid var(--highlight); outline-offset: 2px; }
 @media (max-width: 600px) {
-  [role="button"] { flex-wrap: wrap; }
+  .finding-button { flex-wrap: wrap; }
 }
 
 @media (max-width: 1024px) {

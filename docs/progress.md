@@ -2,7 +2,7 @@
 
 Deployment takeover: 9 October 2026. See `release-verification.md` for the current independently checked results and unresolved gates. Phase PASS labels below are retained as historical Antigravity assertions and are not a current release certification.
 
-Current milestone: preview studio published at https://specshift.pages.dev/ and API at https://specshift-api.onrender.com on the authorized free resources. Production comparison/report/CORS/security-header checks pass. CI passes for 3a6e70a with 76 tests; full policy conformance and screen-reader testing remain open. Portfolio case study is drafted only.
+Current milestone (12 October 2026): local engine 1.0.1 follow-up passes 168 backend tests and 12 accessibility interaction/DOM tests plus the frontend build. Nested/shared evidence aggregation, cyclic entry points, contextual consumer separation and ambiguous-bound verdicts were corrected. Browser keyboard/error/320px checks are recorded in `release-verification.md`. Full policy conformance and actual screen-reader testing remain open. These changes were not pushed or deployed. The 9 October hosted preview and CI results below remain historical evidence. Portfolio case study is drafted only.
 
 ## Project Baseline
 - **Date**: 9 October 2026
