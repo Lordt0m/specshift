@@ -100,7 +100,7 @@ npm run build
 - **Reachability Notice:** A dependency graph shows contract reachability; reachability indicates where consumers *may* be affected, not proof that a specific runtime client fails.
 - **Conservative boundaries:** Non-schema referenced contract objects, readOnly/writeOnly properties, implicit schema types and unknown schema constraints produce coverage gaps. Unclassified semantic edits require review. The parser checks bounded structure and references; it is not an exhaustive OpenAPI validator.
 - **Preview release:** https://specshift.pages.dev/ with a stateless API on Render Free. See `docs/release-verification.md` for verified checks and outstanding conformance/accessibility work. The free API can take about a minute to wake; unsupported or unclassified constructs still require human review.
-- **Local follow-up:** Engine 1.0.1 adds selected forward/reverse, nested/shared and cyclic-context regressions; it does not prove exhaustive OpenAPI compatibility. Twelve UI tests include axe checks in jsdom with contrast disabled and the map mocked. Browser keyboard and 320px checks are recorded; actual screen-reader, comprehensive contrast/zoom and full graph accessibility remain unverified. These local changes have not been deployed.
+- **Verified follow-up:** Engine 1.0.1 and the UI improvements were deployed on 13 October 2026; CI and hosted comparison/report checks passed. Selected forward/reverse, nested/shared and cyclic-context regressions do not prove exhaustive OpenAPI compatibility. Twelve UI tests include axe checks in jsdom with contrast disabled and the map mocked. Browser keyboard and 320px checks are recorded; actual screen-reader, comprehensive contrast/zoom and full graph accessibility remain unverified.
 
 ---
 

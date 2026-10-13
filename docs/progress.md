@@ -2,7 +2,7 @@
 
 Deployment takeover: 9 October 2026. See `release-verification.md` for the current independently checked results and unresolved gates. Phase PASS labels below are retained as historical Antigravity assertions and are not a current release certification.
 
-Current milestone (12 October 2026): local engine 1.0.1 follow-up passes 168 backend tests and 12 accessibility interaction/DOM tests plus the frontend build. Nested/shared evidence aggregation, cyclic entry points, contextual consumer separation and ambiguous-bound verdicts were corrected. Browser keyboard/error/320px checks are recorded in `release-verification.md`. Full policy conformance and actual screen-reader testing remain open. These changes were not pushed or deployed. The 9 October hosted preview and CI results below remain historical evidence. Portfolio case study is drafted only.
+Current milestone (13 October 2026): engine 1.0.1 and the accessibility follow-up are deployed at https://specshift.pages.dev/ and https://specshift-api.onrender.com with Ayotomiwa's explicit authorization. Application commit 888f55b passed GitHub CI; Render reached live and Pages production deployment succeeded. Asset/sample equality, health, CORS, fictional comparison, HTML report and hosted forward/reverse nested/shared cases passed. The implementation passes 168 backend tests and 12 accessibility interaction/DOM tests. Full policy conformance and actual screen-reader testing remain open; `release-verification.md` records exact evidence and exclusions. Portfolio case study remains drafted only.
 
 ## Project Baseline
 - **Date**: 9 October 2026

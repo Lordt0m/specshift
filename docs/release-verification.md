@@ -1,5 +1,18 @@
 # Independent release verification
 
+## Authorized deployment — 13 October 2026
+
+Ayotomiwa explicitly requested deployment. Application release commit `888f55bdc2a21d7fcb0ffcb48fbce5a0276ef793` was pushed to the existing public repository. [GitHub CI](https://github.com/Lordt0m/specshift/actions/runs/38408887521) completed successfully. The local preflight also passed 168 backend tests, the production TypeScript/Vite build with `VITE_API_BASE_URL=https://specshift-api.onrender.com`, and the credential-pattern scan (119 historical blobs plus tracked working files).
+
+- Render auto-deployment `dep-db73gbeq1p3s73euti4g` reached `live` for that application commit at 13:55:46 UTC. The existing `specshift-api` service remains Free, one instance in Frankfurt, with no new resources or paid-plan changes. API: https://specshift-api.onrender.com .
+- Wrangler deployed the static build to the existing `specshift` Pages project, production branch `main`. Deployment URL: https://ac72ae70.specshift.pages.dev . Production studio: https://specshift.pages.dev/ .
+- Synthetic HTTP smoke checks passed: production index and JS/CSS bytes exactly match the local production build; deployed sample JSON equals the engine 1.0.1 sample; studio returns 200 with CSP and nosniff; API health returns 200 with engine 1.0.1; compare preflight and comparison permit the exact production studio origin.
+- Hosted fictional comparison equals local output in full (11 findings, one gap, 2/5 covered operations). HTML report returns 200 with an attachment header, engine 1.0.1 and no script. Hosted forward and reverse nested/shared enum edits with an unchanged unsupported pattern also equal local output, including all four gap consumers and only the unrelated control covered.
+- Reproduction script: workspace `work/specshift_deployment_smoke.py`, executed through the project virtual environment. The first attempt needed Django settings for imported test fixtures; urllib then returned 403, while curl returned 200. The final script uses curl and all assertions passed. No uploaded/private inputs were used.
+- Provider terms were rechecked against [Render Free](https://render.com/docs/free/) and [Cloudflare Pages limits](https://developers.cloudflare.com/pages/platform/limits/). No payment method, paid plan, account or provider resource was added. Account-wide billing/overage settings remain unverified. Error-log inspection was unavailable without a confirmed Render workspace selection; deployment status and HTTP success do not establish the absence of all runtime errors.
+
+The 12 October local checks below now accompany a verified hosted release. Full accessibility, actual screen-reader behavior, exhaustive policy conformance and browser file-download capture remain open. The HTTP report check verifies response contents and headers, not browser download capture. No portfolio changes were made.
+
 ## Local follow-up — 12 October 2026
 
 These results apply to the local working tree with engine **1.0.1**, policy v1. No push, deployment, hosted smoke test, or portfolio publication was performed in this follow-up. The production evidence below remains a dated 9 October record; it does not prove these changes are live.

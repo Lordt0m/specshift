@@ -1,4 +1,4 @@
-# SpecShift release checklist — updated 12 October 2026
+# SpecShift release checklist — updated 13 October 2026
 
 Current status is a preview release. `release-verification.md` contains the evidence and limitations. Historical Antigravity PASS assertions are superseded by this checklist.
 
@@ -13,7 +13,7 @@ Current status is a preview release. `release-verification.md` contains the evid
 | Focus and responsive smoke checks | PASS | Empty-input validation, dialog focus, Shift+Tab containment, Escape restoration, 360px and 1440px checks; mobile overflow repaired |
 | Local accessibility follow-up | PASS, BOUNDED | 12 DOM/interaction tests; three axe jsdom states excluding contrast/map; browser focus, validation, real map activation and 320px dialog checks |
 | Full accessibility conformance | OPEN | Actual screen-reader, comprehensive rendered contrast, forced colors, reduced motion, zoom and full interaction coverage not completed |
-| Follow-up deployment | NOT PERFORMED | Local engine 1.0.1 and UI changes were not pushed/deployed; production rows below are 9 October historical evidence |
+| Follow-up deployment | PASS | 888f55b CI passed; Render deployment live; Pages production deployed; exact asset/sample equality, health 1.0.1, CORS, comparison/report and forward/reverse nested/shared smoke checks passed on 13 October |
 | Public source | PASS | Explicitly authorized public repository at https://github.com/Lordt0m/specshift |
 | Free hosting | PASS | Static Cloudflare Pages project; Render Free web service, one instance and no database/disk add-on |
 | Production smoke checks | PASS | Sample, HTTPS headers, API CORS, fictional comparison and script-free HTML report |
